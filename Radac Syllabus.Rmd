@@ -1,0 +1,129 @@
+---
+title: "R Advanced Data Analysis Course - syllabus"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-02-26"
+output: html_document
+---
+
+# 6-Week Advanced Data Analysis in R: Choosing & Applying Statistical Models
+
+### Pre-Course Refresher Workshop (led at Ellen Campus): Strengthening the Foundations  
+Goal: Refresh core wrangling, visualization, and modeling skills before advanced analysis.  
+- Import CSV with `readr::read_csv()`  
+- Review wrangling: `dplyr::select()`, `dplyr::filter()`, `dplyr::mutate()`, `dplyr::group_by()`, `dplyr::summarise()`  
+- Joining datasets with `left_join()`  
+- Factor handling: `as.factor()`, `relevel()`  
+- Review visualization: `ggplot()`, `geom_point()`, `geom_boxplot()`, `geom_histogram()`  
+- Linear models review: `lm()`, `summary()`  
+- Transformations: `log()`, `scale()`  
+- **Homework:** Clean, visualize, and briefly interpret one variable from your own dataset  
+
+---
+
+### Week 1: From Research Question to Statistical Model  
+**Dataset:** Gorilla hormone + behavioral dataset  
+
+- Identify variable types: continuous, count, binary, categorical, proportion  
+- Independence vs. repeated measures  
+- Cross-sectional vs. longitudinal structure  
+- Diagnose distributions with `geom_histogram()`, `geom_density()`, `qqnorm()`, `qqline()`  
+- Inspect structure using `str()`, `summary()`  
+- Build a statistical decision framework  
+
+- **Visualization:** distribution plots and grouped summaries  
+- **Lab Challenge:** Identify the correct model type for 3 different biological questions from your dataset  
+
+---
+
+### Week 2: Comparing Groups – t-tests, ANOVA & Nonparametric Alternatives  
+**Dataset:** Gorilla biomarker dataset  
+
+- Two-sample `t.test()`  
+- Paired `t.test()`  
+- ANOVA with `aov()`  
+- Check assumptions: normality, homogeneity of variance  
+- Nonparametric alternatives: `wilcox.test()`, `kruskal.test()`  
+- Effect sizes and biological interpretation  
+
+- **Visualization:** `geom_boxplot()`, `geom_violin()`, `geom_jitter()`  
+- **Lab Challenge:** Compare hormone levels across demographic or health categories  
+
+---
+
+### Week 3: Count Data, Skewed Data & Zero Inflation  
+**Dataset:** Gorilla aggression counts, grooming frequency, or parasite load  
+
+- When normality is inappropriate  
+- Poisson regression with `glm(family = "poisson")`  
+- Detecting overdispersion  
+- Negative binomial models with `MASS::glm.nb()`  
+- Conceptual introduction to zero-inflated models  
+- Gamma models for right-skewed continuous data  
+- When (and when not) to apply `log()` transformations  
+
+- **Visualization:** predicted values with `geom_line()` and `geom_point()`  
+- **Lab Challenge:** Fit Poisson and negative binomial models and compare model fit  
+
+---
+
+### Week 4: Binary & Categorical Outcomes – Chi-Square & Logistic Regression  
+**Dataset:** Gorilla health status, survival, demographic transitions  
+
+- Contingency tables with `table()`  
+- `chisq.test()`  
+- `fisher.test()`  
+- Logistic regression with `glm(family = "binomial")`  
+- Interpreting odds ratios  
+- Generate predicted probabilities  
+
+- **Visualization:** probability curves using `geom_line()`  
+- **Lab Challenge:** Model probability of sickness using age, sex, or rank  
+
+---
+
+### Week 5: Mixed Effects Models – Repeated Measures & Hierarchical Data  
+**Dataset:** Longitudinal hormone dataset  
+
+- Why repeated measures violate independence  
+- Random intercept models with `lme4::lmer()`  
+- Conceptual introduction to random slopes  
+- Individual ID as random effect  
+- Nested data structure (individual within group)  
+- Compare mixed vs. non-mixed models  
+
+- Inspect model output with `summary()`  
+- Extract fitted values for visualization  
+- **Visualization:** predicted effects with `geom_line()`  
+
+- **Lab Challenge:** Fit a mixed model with repeated hormone data and interpret fixed vs. random effects  
+
+---
+
+### Week 6: Model Evaluation, Interpretation & Scientific Communication  
+**Dataset:** Student-selected dataset  
+
+- Residual diagnostics  
+- Model comparison using AIC  
+- Interpreting interaction terms  
+- Confidence intervals vs. p-values  
+- Visualizing model predictions  
+- Reporting analyses clearly in RMarkdown  
+
+- **Final Project Lab:**  
+  - Define biological question  
+  - Justify model choice  
+  - Run analysis  
+  - Visualize results  
+  - Interpret findings  
+
+---
+
+### Final Presentation Session  
+- Each student gives 5–7 minute presentation  
+- Emphasis on:  
+  - Clear biological question  
+  - Appropriate model choice  
+  - Assumptions considered  
+  - Interpretation beyond p-values  
+  - Clean, publication-quality visualization  
+  
