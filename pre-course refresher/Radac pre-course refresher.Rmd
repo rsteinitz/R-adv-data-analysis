@@ -1,0 +1,665 @@
+---
+title: "Advanced Data Analysis Course - Pre-Course Refresher Exercises"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-04-15"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+# Pre-Course Refresher Workshop
+
+## Purpose
+
+This refresher is designed to review the most important skills from last year's introductory R course before we begin the 6-week Advanced Data Analysis course. You have already seen most of these tools before. The goal is to rebuild confidence, refresh your memory, and get everyone ready to move into more advanced statistical thinking.
+
+This refresher is divided into two sessions:
+
+- **Week 1: Basics** — project setup, working directories, importing data, exploratory summaries, and basic plots
+- **Week 2: Wrangling** — data wrangling, joins, simple models, transformations, and a short applied challenge
+
+---
+
+# Week 1: Basics
+
+## 1. Setup
+
+Before we begin any coding, we need to make sure your files are organized correctly. Good file organization will save you a lot of confusion later in the course.
+
+### 1A. Set up your course folder
+
+For this course, you should keep **all course materials in one main folder** on your computer.
+
+#### Step 1: Create a main course folder
+
+Create a new folder somewhere easy to find on your computer. For example:
+
+`Advanced_data_analysis_course`
+
+#### Step 2: Create a subfolder for this workshop
+
+Inside that main folder, create a second folder called:
+
+`pre-course refresher`
+
+Your folder structure should look something like this:
+
+`Advanced_data_analysis_course/`  
+└── `pre-course refresher/`
+
+#### Step 3: Move your downloaded files
+
+You downloaded these two files from Google Drive into your Downloads folder:
+
+`Radac_refresher_exercises.Rmd`  
+`Palmer Penguins Raw.csv`
+
+Move both files from Downloads into the `pre-course refresher` folder.
+
+So now your folder should look like this:
+
+`Advanced_data_analysis_course/`  
+└── `pre-course refresher/`  
+&nbsp;&nbsp;&nbsp;&nbsp;└── `Radac_refresher_exercises.Rmd`  
+&nbsp;&nbsp;&nbsp;&nbsp;└── `Palmer Penguins Raw.csv`
+
+---
+
+### 1B. Check file names carefully
+
+File names in R must match exactly.
+
+That means:
+
+- uppercase and lowercase letters matter
+- spaces matter
+- punctuation matters
+- file extensions matter
+
+For example:
+
+`Palmer Penguins Raw.csv` is **not** the same as:
+
+- `palmer penguins raw.csv`
+- `Palmer_penguins_raw.csv`
+- `Palmer Penguins Raw.CSV`
+- `Palmer Penguins Raw`
+
+Also make sure the file is really a `.csv` file and the R Markdown file is really an `.Rmd` file.
+
+---
+
+### 1C. Create an R Project
+
+We will use an R Project for this course. This is important because it helps RStudio automatically keep track of the correct working directory.
+
+1. Open RStudio  
+2. Go to: `File > New Project`
+3. Choose: `Existing Directory`
+4. Navigate to your main course folder:  
+   `Advanced_data_analysis_course`
+5. Click `Create Project`
+
+RStudio should now reopen inside your course project.
+
+---
+
+### 1D. Open the refresher file from inside the project
+
+Once the project opens:
+
+1. In the `Files` pane, click into the `pre-course refresher` folder  
+2. Open `Radac_refresher_exercises.Rmd`
+
+You should now be working inside the correct project.
+
+---
+
+### 1E. What is a working directory?
+
+Your working directory is the folder R is currently using to look for files and save output.
+
+Because you opened an R Project, your working directory should now be:
+
+`.../Advanced_data_analysis_course`
+
+That means your `.csv` file is inside a subfolder called:
+
+`pre-course refresher`
+
+---
+
+### 1F. Check your working directory
+
+Run:
+
+```{r}
+getwd()
+```
+
+Your output should end with something like:
+
+`.../Advanced_data_analysis_course`
+
+---
+
+### 1G. Check that R can see your files
+
+Run:
+
+```{r}
+list.files()
+```
+
+You should see:
+
+`pre-course refresher`
+
+Now run:
+
+```{r}
+list.files("pre-course refresher")
+```
+
+You should see:
+
+`Radac_refresher_exercises.Rmd`  
+`penguins.csv`
+
+---
+
+## 2. Load Packages
+
+```{r setup, message=FALSE, warning=FALSE}
+# install the package only if you have not yet, although you should have it already installed;
+# you might want to update by re-installing!
+# ---------
+# install.packages(c("tidyverse", "here", "janitor"))
+
+# load packages
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+---
+
+## 3. Import a Dataset
+
+Because your `.csv` file is inside the `pre-course refresher` folder, use this path:
+
+```{r}
+penguins <- readr::read_csv(here::here("pre-course refresher/penguins.csv")) %>% 
+  janitor::clean_names()
+```
+
+Then inspect it:
+
+```{r}
+dplyr::glimpse(penguins)
+```
+
+---
+
+## 4. Warm-Up: Explore the Data
+
+We will use the penguins dataset for most exercises because it contains a mix of numeric and categorical variables and includes some missing values.
+
+### Exercise 1: First look
+
+Run the following commands and write 1-2 sentences describing what you notice about the dataset.
+
+```{r}
+dplyr::glimpse(penguins)
+
+summary(penguins) # summary of the dataset
+
+head(penguins) # shows the first 6 rows
+
+tail(penguins) # shows the last 6 rows
+
+nrow(penguins) # number of rows, or observations
+
+ncol(penguins) # number of columns, or variables
+```
+
+**Questions**
+
+1. How many rows and columns are in the dataset?  
+2. Which variables are numeric?  
+3. Which variables are categorical?  
+4. Do you notice any missing values?  
+
+---
+
+## 5. Exploratory Plots
+
+Before making polished plots with `ggplot2`, it can be useful to make quick exploratory plots.
+
+### Exercise 2: Quick histograms with base R
+
+Use `hist()` to look at the distribution of body mass and flipper length.
+
+```{r}
+hist(penguins$body_mass_g)
+
+hist(penguins$flipper_length_mm)
+```
+
+**Questions**
+
+1. What does each histogram show you?  
+2. What does the y-axis mean?
+3. Do either of these variables look skewed?  
+4. Are there any values that look unusual?  
+
+---
+
+## 6. Review of Visualization with ggplot2
+
+### Exercise 3: Scatterplot
+
+Make a scatterplot of bill length vs. bill depth, colored by species.
+
+```{r}
+ggplot2::ggplot(penguins, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  ggplot2::geom_point()
+```
+
+### Exercise 4: Boxplot
+
+Make a boxplot of body mass by species.
+
+```{r}
+ggplot2::ggplot(penguins, ggplot2::aes(x = species, y = body_mass_g, fill = species)) +
+  ggplot2::geom_boxplot()
+```
+
+### Exercise 5: Histogram
+
+Make a histogram of flipper length.
+
+```{r}
+ggplot2::ggplot(penguins, ggplot2::aes(x = flipper_length_mm)) +
+  ggplot2::geom_histogram(bins = 20)
+```
+
+### Exercise 6: Improve one plot
+
+Choose one of the plots above and improve it by adding:
+
+- a title
+- better axis labels
+- custom colors
+- a cleaner theme
+
+```{r}
+ggplot2::ggplot(penguins, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  ggplot2::geom_point() +
+  ggplot2::labs(
+    title = "Bill length and bill depth in penguins",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)"
+  ) +
+  scale_color_manual(values = c("orchid4", "seagreen", "darkorange")) +
+  ggplot2::theme_minimal()
+```
+
+**Questions**
+
+1. Which type of plot is best for comparing groups?  
+2. Which type is best for showing the relationship between two numeric variables?  
+3. Which plot would you use to check the distribution of one numeric variable?  
+
+
+---
+
+# Week 2: Wrangling
+
+## 7. Selecting, Filtering, and Creating Variables
+
+### Exercise 7: Select only a few columns
+
+Create a new object called `penguins_small` that includes only these variables:
+
+- `species`
+- `island`
+- `sex`
+- `bill_length_mm`
+- `bill_depth_mm`
+- `body_mass_g`
+
+```{r}
+penguins_small <- penguins %>%
+  dplyr::select(species, island, sex, bill_length_mm, bill_depth_mm, body_mass_g)
+
+penguins_small
+```
+
+### Exercise 8: Filter rows
+
+Create a dataset called `female_penguins` that includes only female penguins with non-missing body mass values.
+
+```{r}
+female_penguins <- penguins %>%
+  dplyr::filter(sex == "FEMALE", !is.na(body_mass_g))
+
+glimpse(female_penguins)
+```
+
+**Question**  
+How many female penguins are in this filtered dataset?
+
+```{r}
+nrow(female_penguins) # you can also look in your "Environment" panel, and see the number of observations in the object `female_penguins`
+```
+
+### Exercise 9: Make new variables
+
+Use `dplyr::mutate()` to create:
+
+- `body_mass_kg` = body mass in kilograms
+- `bill_ratio` = bill length divided by bill depth
+
+```{r}
+penguins_new <- penguins %>%
+  dplyr::mutate(
+    body_mass_kg = body_mass_g / 1000,
+    bill_ratio = bill_length_mm / bill_depth_mm
+  )
+
+glimpse(penguins_new)
+```
+
+**Questions**
+
+1. Why might `body_mass_kg` be useful?  
+2. Why might `bill_ratio` be useful?  
+3. What happens to `bill_ratio` if either bill measurement is missing?  
+
+---
+
+## 8. Grouping and Summarizing
+
+### Exercise 10: Summarize by species
+
+Calculate the following for each species:
+
+- number of penguins
+- mean body mass
+- mean flipper length
+
+```{r}
+species_summary <- penguins %>%
+  dplyr::group_by(species) %>%
+  dplyr::summarise(
+    n = dplyr::n(),
+    mean_body_mass = mean(body_mass_g, na.rm = TRUE),
+    mean_flipper = mean(flipper_length_mm, na.rm = TRUE)
+  )
+
+species_summary
+```
+
+### Exercise 11: Summarize by species and sex
+
+Now calculate mean body mass by both species and sex.
+
+```{r}
+species_sex_summary <- penguins %>%
+  dplyr::group_by(species, sex) %>%
+  dplyr::summarise(
+    mean_body_mass = mean(body_mass_g, na.rm = TRUE),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
+
+species_sex_summary
+```
+
+**Questions**
+
+1. Which species appears heaviest on average?  
+2. Within species, do males and females differ in body mass?  
+3. Why is it useful to include `n` when summarizing by group?  
+
+---
+
+## 9. Joining Data
+
+Sometimes your data are split across multiple files. To practice joining, we will create a small second dataset.
+
+```{r}
+island_info <- tibble::tibble(
+  island = c("Biscoe", "Dream", "Torgersen"), # these are the given islands
+  area = c("West", "Central", "East") # these are the regions affiliated with each island-- what we want to **add** to the dataset
+)
+
+island_info
+```
+
+### Exercise 12: Join the datasets
+
+Use `dplyr::left_join()` to add the `region` variable to the penguins dataset.
+
+```{r}
+penguins_joined <- penguins %>%
+  dplyr::left_join(island_info, by = "island") # we joined the "area" information by "island." Each observation now has information about the area that is associated with its island. 
+
+glimpse(penguins_joined)
+```
+
+**Questions**
+
+1. Did the number of rows change after the join? Why or why not?  
+2. What would happen if one island name were misspelled in one of the datasets?  
+3. Why do we need a shared column when joining datasets?  
+
+---
+
+## 10. Review of Linear Models
+
+We will fit a simple linear model to test whether flipper length predicts body mass.
+
+### Exercise 13: Fit a model
+
+First remove missing values for the two variables.
+
+```{r}
+model_data <- penguins %>%
+  dplyr::filter(!is.na(flipper_length_mm), !is.na(body_mass_g))
+```
+
+Fit the model:
+
+```{r}
+mod1 <- lm(body_mass_g ~ flipper_length_mm, data = model_data)
+
+summary(mod1)
+```
+
+### Questions
+
+1. What is the response (outcome) variable in this model?  
+2. What is the predictor variable in this model?  
+3. Is the relationship between flipper length and body mass positive or negative? How can you tell from the output?  
+4. What does the intercept represent? Does it make biological sense in this case?  
+5. What does the p-value tell you about the relationship between flipper length and body mass?  
+6. What does the R-squared value tell you?  
+
+### Exercise 14: Visualize the model
+
+```{r}
+ggplot2::ggplot(model_data, ggplot2::aes(x = flipper_length_mm, y = body_mass_g)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth(method = "lm", se = TRUE)
+```
+
+**Questions**
+
+1. Does this visualized relationship match the model output from the linear regression?  
+2. What does the slope mean in this model, biologically?  
+
+---
+
+## 11. Transformations
+
+In the advanced course, we will work more carefully with assumptions and model fit. Transformations are one tool that can help.
+
+### Exercise 15: Log-transform a variable
+
+Create a log-transformed version of body mass.
+
+```{r}
+hist(penguins$body_mass_g)
+
+penguins_transformed <- penguins %>%
+  dplyr::filter(!is.na(body_mass_g)) %>%
+  dplyr::mutate(
+    log_body_mass = log(body_mass_g)
+  )
+
+hist(penguins_transformed$log_body_mass)
+```
+
+### Exercise 16: Standardize a variable
+
+Use `scale()` to standardize flipper length.
+
+```{r}
+hist(penguins_transformed$flipper_length_mm)
+
+penguins_transformed <- penguins_transformed %>%
+  dplyr::mutate(
+    flipper_z = as.numeric(scale(flipper_length_mm))
+  )
+
+hist(penguins_transformed$flipper_z)
+```
+
+**Questions**
+
+1. What does `log()` do to a skewed variable?  
+2. What does a z-score represent?  
+3. Why might standardizing predictors be useful in advanced models?  
+
+---
+
+## 12. Lab Challenge: Short Applied Practice
+
+Now try a short workflow on your own.
+
+### Exercise 17: Mini-analysis
+
+Choose **one** numeric variable and **one** categorical variable from the dataset.
+
+Your task:
+
+1. inspect the variables  
+2. clean missing values if needed  
+3. summarize the numeric variable by the categorical variable  
+4. make one plot  
+5. write 2-3 sentences interpreting what you found  
+
+You can use this template:
+
+```{r}
+# Step 1: choose variables
+# Example:
+# numeric_var = body_mass_g
+# categorical_var = species
+
+mini_summary <- penguins %>%
+  dplyr::filter(!is.na(body_mass_g), !is.na(species)) %>%
+  dplyr::group_by(species) %>%
+  dplyr::summarise(
+    mean_value = mean(body_mass_g),
+    n = dplyr::n()
+  )
+
+mini_summary
+```
+
+```{r}
+ggplot2::ggplot(
+  penguins %>% dplyr::filter(!is.na(body_mass_g), !is.na(species)),
+  ggplot2::aes(x = species, y = body_mass_g, fill = species)
+) +
+  ggplot2::geom_boxplot()
+```
+
+---
+
+## 13. Optional Challenge
+
+If you finish early, try one or both of these:
+
+### Challenge A
+
+Fit a linear model with two predictors:
+
+```{r}
+mod2 <- lm(body_mass_g ~ flipper_length_mm + species, data = model_data)
+
+summary(mod2)
+```
+
+**How does this model differ from the first one?**
+
+### Challenge B
+
+Make a scatterplot of bill length vs. body mass, colored by species, and add separate trend lines for each species.
+
+```{r}
+penguins2 <- penguins %>% filter(!is.na(bill_length_mm) & !is.na(body_mass_g) & !is.na(species))
+# removing any observations with missing data
+
+ggplot2::ggplot(penguins2, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+What do the species-specific patterns look like?
+
+---
+
+## Homework
+
+Use **your own dataset** for a short refresher analysis.
+
+### Homework task
+
+Choose **one variable** from your own dataset and do the following:
+
+1. clean or filter the data if needed  
+2. make one plot  
+3. write 3-4 sentences interpreting the variable  
+4. if possible, compare it across one grouping variable, such as sex, age class, location, group, treatment, or year
+
+### What to submit
+
+Submit an `.Rmd` or knitted output that includes:
+
+- your code
+- one figure
+- a short written interpretation
+
+---
+
+## Final Reflection
+
+Before the advanced course begins, make sure you can answer these questions:
+
+- Can I set up and open an R Project?
+- Can I check my working directory?
+- Can I import a dataset and inspect its structure?
+- Can I make quick exploratory summaries and plots?
+- Can I filter rows and create new variables?
+- Can I summarize values by group?
+- Can I join two datasets correctly?
+- Can I make and customize a basic plot?
+- Can I fit and interpret a simple linear model?
+- Can I explain why I used a transformation?
+
+If not, revisit the relevant section and practice again.

@@ -7,16 +7,20 @@ output: html_document
 
 # 6-Week Advanced Data Analysis in R: Choosing & Applying Statistical Models
 
-### Pre-Course Refresher Workshop (led at Ellen Campus): Strengthening the Foundations  
+### Pre-Course Refresher Workshop (led by Jado)  
 Goal: Refresh core wrangling, visualization, and modeling skills before advanced analysis.  
+**Week 1: Basics**  
+- Set up a new project and find working directory  
+- Initiate a new Rmd. file  
 - Import CSV with `readr::read_csv()`  
+- Exploratory stats and plots `summary()`, `glimpse()`, `hist()`  
+- Review visualization: `ggplot()`, `geom_point()`, `geom_boxplot()`, `geom_histogram()`  
+**Week 2: Wrangling**  
 - Review wrangling: `dplyr::select()`, `dplyr::filter()`, `dplyr::mutate()`, `dplyr::group_by()`, `dplyr::summarise()`  
 - Joining datasets with `left_join()`  
-- Factor handling: `as.factor()`, `relevel()`  
-- Review visualization: `ggplot()`, `geom_point()`, `geom_boxplot()`, `geom_histogram()`  
 - Linear models review: `lm()`, `summary()`  
 - Transformations: `log()`, `scale()`  
-- **Homework:** Clean, visualize, and briefly interpret one variable from your own dataset  
+- **Lab Challenge** Clean, visualize, and briefly interpret one variable from your own dataset  
 
 ---
 
