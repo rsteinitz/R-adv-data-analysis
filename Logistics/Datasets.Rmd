@@ -1,0 +1,394 @@
+---
+title: "Datasets"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-05-15"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Producing Gorilla Dataset for Week 1
+
+```{r}
+# ------------------------------------------------------------
+# Create faux gorilla hormone + behavioral dataset
+# using real gorilla names, sex, and first observed group
+# ------------------------------------------------------------
+
+library(tidyverse)
+library(lubridate)
+library(janitor)
+
+set.seed(123)
+
+# ------------------------------------------------------------
+# 1. Read real gorilla names, sex, and first observed group
+# ------------------------------------------------------------
+
+gorilla_pool <- readr::read_csv("Logistics/gorilla_names_groups.csv") %>%
+  janitor::clean_names() %>%
+  dplyr::rename(
+    gorilla_name = full_name,
+    group = first_obs_group
+  ) %>%
+  dplyr::mutate(
+    gorilla_name = stringr::str_squish(gorilla_name),
+    sex = stringr::str_squish(sex),
+    group = stringr::str_squish(group)
+  ) %>%
+  dplyr::filter(
+    !is.na(gorilla_name),
+    gorilla_name != "",
+    !is.na(group),
+    group != "",
+    sex %in% c("M", "F")
+  )
+
+# quick checks
+dplyr::glimpse(gorilla_pool)
+dplyr::count(gorilla_pool, sex)
+dplyr::count(gorilla_pool, group, sort = TRUE)
+
+# ------------------------------------------------------------
+# 2. Select individuals for faux dataset
+# ------------------------------------------------------------
+
+gorillas <- gorilla_pool %>%
+  dplyr::group_by(group) %>%
+  dplyr::filter(dplyr::n() >= 4) %>%
+  dplyr::ungroup() %>%
+  dplyr::sample_n(size = 30) %>%
+  dplyr::mutate(
+    gorilla_id = paste0("G", stringr::str_pad(dplyr::row_number(), width = 3, pad = "0")),
+    
+    age_years = round(runif(dplyr::n(), min = 3, max = 38), 1),
+    
+    age_class = dplyr::case_when(
+      age_years < 4 ~ "infant",
+      age_years < 8 ~ "juvenile",
+      age_years < 12 ~ "subadult",
+      TRUE ~ "adult"
+    ),
+    
+    dominance_rank = dplyr::case_when(
+      age_class != "adult" ~ NA_real_,
+      sex == "M" ~ sample(1:4, size = dplyr::n(), replace = TRUE),
+      sex == "F" ~ sample(2:8, size = dplyr::n(), replace = TRUE)
+    )
+  ) %>%
+  dplyr::select(
+    gorilla_id,
+    gorilla_name,
+    group,
+    sex,
+    age_years,
+    age_class,
+    dominance_rank
+  )
+
+# group size based on selected individuals
+group_sizes <- gorillas %>%
+  dplyr::count(group, name = "group_size")
+
+# ------------------------------------------------------------
+# 3. Create repeated sample-level dataset
+# ------------------------------------------------------------
+
+gorilla_hormones <- gorillas %>%
+  dplyr::left_join(group_sizes, by = "group") %>%
+  dplyr::slice(rep(1:dplyr::n(), each = 8)) %>%
+  dplyr::group_by(gorilla_id) %>%
+  dplyr::mutate(
+    sample_number = dplyr::row_number(),
+    sample_id = paste0(gorilla_id, "_S", stringr::str_pad(sample_number, 2, pad = "0")),
+    sample_date = as.Date("2025-01-01") + sample(0:364, size = dplyr::n(), replace = TRUE)
+  ) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(
+    observer = sample(
+      c("Robert", "Paul", "Mark", "Sarah", "Mary"),
+      size = dplyr::n(),
+      replace = TRUE
+    ),
+    
+    fruit_availability_index = dplyr::case_when(
+      lubridate::month(sample_date) %in% c(1, 2, 3, 10, 11, 12) ~ rnorm(dplyr::n(), mean = 0.70, sd = 0.12),
+      TRUE ~ rnorm(dplyr::n(), mean = 0.40, sd = 0.12)
+    ),
+    
+    fruit_availability_index = pmin(pmax(fruit_availability_index, 0.05), 0.95),
+    
+    feeding_time_prop = dplyr::case_when(
+      group_size >= 4 ~ rbeta(dplyr::n(), shape1 = 7, shape2 = 5),
+      group_size == 3 ~ rbeta(dplyr::n(), shape1 = 6, shape2 = 5),
+      group_size == 2 ~ rbeta(dplyr::n(), shape1 = 5, shape2 = 6),
+      TRUE ~ rbeta(dplyr::n(), shape1 = 4, shape2 = 7)
+    ),
+    
+    aggression_events = rpois(
+      dplyr::n(),
+      lambda = dplyr::case_when(
+        sex == "M" & age_class == "adult" ~ 3.0,
+        sex == "M" ~ 1.8,
+        TRUE ~ 0.8
+      )
+    ),
+    
+    parasite_load = rnbinom(
+      dplyr::n(),
+      size = 2,
+      mu = dplyr::case_when(
+        age_class %in% c("infant", "juvenile") ~ 35,
+        age_class == "subadult" ~ 25,
+        TRUE ~ 18
+      )
+    ),
+    
+    respiratory_signs = rbinom(
+      dplyr::n(),
+      size = 1,
+      prob = dplyr::case_when(
+        group_size >= 4 ~ 0.25,
+        TRUE ~ 0.12
+      )
+    ),
+    
+    injury_status = rbinom(
+      dplyr::n(),
+      size = 1,
+      prob = dplyr::case_when(
+        aggression_events >= 3 ~ 0.22,
+        TRUE ~ 0.06
+      )
+    ),
+    
+    cortisol_ng_ml = exp(
+      2.8 +
+        0.08 * aggression_events +
+        0.35 * respiratory_signs +
+        0.25 * injury_status -
+        0.35 * feeding_time_prop +
+        rnorm(dplyr::n(), mean = 0, sd = 0.35)
+    ),
+    
+    testosterone_ng_ml = exp(
+      1.0 +
+        ifelse(sex == "M", 1.0, 0) +
+        ifelse(age_class == "adult", 0.5, 0) +
+        ifelse(sex == "M" & !is.na(dominance_rank), -0.12 * dominance_rank, 0) +
+        0.05 * aggression_events +
+        rnorm(dplyr::n(), mean = 0, sd = 0.45)
+    )
+  ) %>%
+  dplyr::select(
+    sample_id,
+    gorilla_id,
+    gorilla_name,
+    group,
+    sample_date,
+    observer,
+    sex,
+    age_class,
+    age_years,
+    dominance_rank,
+    group_size,
+    fruit_availability_index,
+    feeding_time_prop,
+    aggression_events,
+    parasite_load,
+    respiratory_signs,
+    injury_status,
+    cortisol_ng_ml,
+    testosterone_ng_ml
+  )
+
+# ------------------------------------------------------------
+# 4. Inspect and save dataset
+# ------------------------------------------------------------
+
+dplyr::glimpse(gorilla_hormones)
+
+summary(gorilla_hormones)
+
+readr::write_csv(gorilla_hormones, "gorilla_hormone_behavior_data.csv")
+
+# save as CSV
+# readr::write_csv(gorilla_hormones, "gorilla_hormone_behavior_data.csv")
+```
+
+repeated measures by gorilla_id
+continuous variables: cortisol_ng_ml, testosterone_ng_ml, age_years, fruit_availability_index
+count variables: aggression_events, parasite_load
+binary variables: respiratory_signs, injury_status
+categorical variables: group, sex, age_class, observer
+proportion variable: feeding_time_prop
+
+```{r}
+
+# ------------------------------------------------------------
+# 1. Testosterone differs strongly by sex
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = sex, y = testosterone_ng_ml, fill = sex)
+) +
+  ggplot2::geom_boxplot(alpha = 0.7) +
+  ggplot2::labs(
+    title = "Testosterone differs by sex",
+    x = "Sex",
+    y = "Testosterone (ng/mL)"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 2. Cortisol increases with aggression
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = aggression_events, y = cortisol_ng_ml)
+) +
+  ggplot2::geom_jitter(width = 0.2, alpha = 0.5) +
+  ggplot2::geom_smooth(method = "lm", se = TRUE) +
+  ggplot2::labs(
+    title = "Cortisol increases with aggression",
+    x = "Aggression events",
+    y = "Cortisol (ng/mL)"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 3. Feeding time proportion differs across groups
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = group, y = feeding_time_prop, fill = group)
+) +
+  ggplot2::geom_boxplot(alpha = 0.7) +
+  ggplot2::labs(
+    title = "Feeding time proportion differs across groups",
+    x = "Group",
+    y = "Feeding time proportion"
+  ) +
+  ggplot2::theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45)
+  ) 
+```
+
+```{r}
+# ------------------------------------------------------------
+# 4. Younger gorillas tend to have higher parasite loads
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = age_years, y = parasite_load, color = sex)
+) +
+  ggplot2::geom_point(alpha = 0.5) +
+  ggplot2::geom_smooth(method = "lm", se = TRUE) +
+  ggplot2::labs(
+    title = "Parasite load declines with age",
+    x = "Age (years)",
+    y = "Parasite load"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 5. Respiratory signs are more common in larger groups
+# ------------------------------------------------------------
+
+resp_summary <- gorilla_hormones %>%
+  dplyr::group_by(group, group_size) %>%
+  dplyr::summarise(
+    respiratory_prop = mean(respiratory_signs),
+    .groups = "drop"
+  )
+
+ggplot2::ggplot(
+  resp_summary,
+  ggplot2::aes(x = group_size, y = respiratory_prop)
+) +
+  ggplot2::geom_point(size = 3) +
+  ggplot2::geom_smooth(method = "lm", se = FALSE) +
+  ggplot2::labs(
+    title = "Respiratory signs are more common in larger groups",
+    x = "Group size",
+    y = "Proportion with respiratory signs"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+
+# ------------------------------------------------------------
+# 6. Adult males show the highest testosterone values
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = age_class, y = testosterone_ng_ml, fill = sex)
+) +
+  ggplot2::geom_boxplot(alpha = 0.7) +
+  ggplot2::labs(
+    title = "Adult males show the highest testosterone values",
+    x = "Age class",
+    y = "Testosterone (ng/mL)"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 7. Cortisol decreases as feeding time increases
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = feeding_time_prop, y = cortisol_ng_ml)
+) +
+  ggplot2::geom_point(alpha = 0.5) +
+  ggplot2::geom_smooth(method = "lm", se = TRUE) +
+  ggplot2::labs(
+    title = "Cortisol decreases with feeding time",
+    x = "Feeding time proportion",
+    y = "Cortisol (ng/mL)"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 8. Hormone distributions are strongly right-skewed
+# ------------------------------------------------------------
+
+ggplot2::ggplot(
+  gorilla_hormones,
+  ggplot2::aes(x = cortisol_ng_ml)
+) +
+  ggplot2::geom_histogram(bins = 30) +
+  ggplot2::labs(
+    title = "Distribution of cortisol values",
+    x = "Cortisol (ng/mL)",
+    y = "Count"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+# ------------------------------------------------------------
+# 9. QQ plot for cortisol
+# ------------------------------------------------------------
+
+qqnorm(gorilla_hormones$cortisol_ng_ml)
+qqline(gorilla_hormones$cortisol_ng_ml)
+```
+

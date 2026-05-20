@@ -2,20 +2,22 @@
 title: "R Advanced Data Analysis Course - syllabus"
 author: "Ronnie Bailey-Steinitz"
 date: "2026-02-26"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # 6-Week Advanced Data Analysis in R: Choosing & Applying Statistical Models
 
-### Pre-Course Refresher Workshop (led by Jado)  
+### Pre-Course Refresher Workshop (led by Ronnie)
 Goal: Refresh core wrangling, visualization, and modeling skills before advanced analysis.  
-**Week 1: Basics**  
+**Week 1: Basics (May 29, 2026)**  
 - Set up a new project and find working directory  
 - Initiate a new Rmd. file  
 - Import CSV with `readr::read_csv()`  
 - Exploratory stats and plots `summary()`, `glimpse()`, `hist()`  
 - Review visualization: `ggplot()`, `geom_point()`, `geom_boxplot()`, `geom_histogram()`  
-**Week 2: Wrangling**  
+**Week 2: Wrangling (June 5, 2026)**  
 - Review wrangling: `dplyr::select()`, `dplyr::filter()`, `dplyr::mutate()`, `dplyr::group_by()`, `dplyr::summarise()`  
 - Joining datasets with `left_join()`  
 - Linear models review: `lm()`, `summary()`  
@@ -25,7 +27,8 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 1: From Research Question to Statistical Model  
-**Dataset:** Gorilla hormone + behavioral dataset  
+June 12, 2026  
+**Dataset:** Hormone + behavioral dataset  
 
 - Identify variable types: continuous, count, binary, categorical, proportion  
 - Independence vs. repeated measures  
@@ -40,7 +43,8 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 2: Comparing Groups – t-tests, ANOVA & Nonparametric Alternatives  
-**Dataset:** Gorilla biomarker dataset  
+June 19, 2026  
+**Dataset:** Hormone dataset  
 
 - Two-sample `t.test()`  
 - Paired `t.test()`  
@@ -55,7 +59,8 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 3: Count Data, Skewed Data & Zero Inflation  
-**Dataset:** Gorilla aggression counts, grooming frequency, or parasite load  
+June 26, 2026  
+**Dataset:** Aggression counts, parasite load, vert census data   
 
 - When normality is inappropriate  
 - Poisson regression with `glm(family = "poisson")`  
@@ -71,7 +76,8 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 4: Binary & Categorical Outcomes – Chi-Square & Logistic Regression  
-**Dataset:** Gorilla health status, survival, demographic transitions  
+July 10, 2026  
+**Dataset:** Health status, survival, demographic transitions  
 
 - Contingency tables with `table()`  
 - `chisq.test()`  
@@ -86,7 +92,8 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 5: Mixed Effects Models – Repeated Measures & Hierarchical Data  
-**Dataset:** Longitudinal hormone dataset  
+July 17, 2026  
+**Dataset:** Longitudinal dataset (environmental measurement?)  
 
 - Why repeated measures violate independence  
 - Random intercept models with `lme4::lmer()`  
@@ -104,6 +111,7 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Week 6: Model Evaluation, Interpretation & Scientific Communication  
+July 24, 2026  
 **Dataset:** Student-selected dataset  
 
 - Residual diagnostics  
@@ -123,6 +131,7 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ---
 
 ### Final Presentation Session  
+July 31, 2026  
 - Each student gives 5–7 minute presentation  
 - Emphasis on:  
   - Clear biological question  
