@@ -214,7 +214,7 @@ penguins <- readr::read_csv(here::here("pre-course refresher/penguins.csv")) %>%
 
 We will use the penguins dataset for most exercises because it contains a mix of numeric and categorical variables and includes some missing values.
 
-### Exercise 1: First look
+### 3.1. First look
 
 
 ```{r}
@@ -244,7 +244,7 @@ ncol(penguins) # number of columns, or variables
 
 Before making polished plots with `ggplot2`, it can be useful to make quick exploratory plots.
 
-### Exercise 2: Quick histograms with base R
+### 4.1. Quick histograms with base R
 
 Use `hist()` to look at the distribution of body mass and flipper length.
 
@@ -265,7 +265,7 @@ hist(penguins$flipper_length_mm)
 
 ## 5. Review of Visualization with ggplot2
 
-### Exercise 3: Basic visualizations
+### 5.1. Basic visualizations
 
 ```{r}
 # Make a scatterplot of bill length vs. bill depth, colored by species
@@ -283,7 +283,7 @@ ggplot(penguins, aes(x = flipper_length_mm)) +
 ```
 
 
-### Exercise 4: Improve one plot
+### 5.2. Improve one plot
 
 Choose one of the plots above and improve it by adding:
 
@@ -318,7 +318,7 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 
 ## 6. Selecting, Filtering, and Creating Variables
 
-### Exercise 5: Select only a few columns
+### 6.1. Select only a few columns
 
 Create a new object called `penguins_small` that includes only these variables:
 
@@ -342,7 +342,7 @@ penguins_small
 2. Do the means and distributions of the variables change in this new dataset?    
 
 
-### Exercise 6: Filter rows
+###6.2. Filter rows
 
 Create a dataset called `female_penguins` that includes only female penguins with non-missing body mass values.
 
@@ -363,7 +363,7 @@ glimpse(female_penguins)
 nrow(female_penguins) # you can also look in your "Environment" panel, and see the number of observations in the object `female_penguins`
 ```
 
-### Exercise 7: Make new variables
+### 6.3. Make new variables
 
 Use `dplyr::mutate()` to create:
 
@@ -390,7 +390,7 @@ glimpse(penguins_new)
 
 ## 7. Grouping and Summarizing
 
-### Exercise 10: Summarize by species
+### 7.1. Summarize by species
 
 Calculate the following for each species:
 
@@ -410,7 +410,7 @@ species_summary <- penguins %>%
 species_summary
 ```
 
-### Exercise 11: Summarize by species and sex
+### 7.2. Summarize by species and sex
 
 Now calculate mean body mass by both species and sex.
 
@@ -447,7 +447,7 @@ island_info <- tibble::tibble(
 island_info
 ```
 
-### Exercise 12: Join the datasets
+### 8.1. Join the datasets
 
 Use `dplyr::left_join()` to add the `region` variable to the penguins dataset.
 
@@ -470,7 +470,7 @@ glimpse(penguins_joined)
 
 We will fit a simple linear model to test whether flipper length predicts body mass.
 
-### Exercise 13: Fit a model
+### 9.1. Fit a model
 
 First remove missing values for the two variables.
 
@@ -496,7 +496,7 @@ summary(mod1)
 5. What does the p-value tell you about the relationship between flipper length and body mass?  
 6. What does the R-squared value tell you?  
 
-### Exercise 14: Visualize the model
+### 9.2. Visualize the model
 
 ```{r}
 ggplot2::ggplot(model_data, ggplot2::aes(x = flipper_length_mm, y = body_mass_g)) +
@@ -515,7 +515,7 @@ ggplot2::ggplot(model_data, ggplot2::aes(x = flipper_length_mm, y = body_mass_g)
 
 In the advanced course, we will work more carefully with assumptions and model fit. Transformations are one tool that can help.
 
-### Exercise 15: Log-transform a variable
+### 10.1. Log-transform a variable
 
 Create a log-transformed version of body mass.
 
@@ -531,7 +531,7 @@ penguins_transformed <- penguins %>%
 hist(penguins_transformed$log_body_mass)
 ```
 
-### Exercise 16: Standardize a variable
+### 10.2. Standardize a variable
 
 Use `scale()` to standardize flipper length.
 
@@ -558,7 +558,7 @@ hist(penguins_transformed$flipper_z)
 
 Now try a short workflow on your own.
 
-### Exercise 17: Mini-analysis
+### 11.1. Mini-analysis
 
 Choose **one** numeric variable and **one** categorical variable from the dataset.
 
@@ -603,7 +603,7 @@ ggplot2::ggplot(
 
 If you finish early, try one or both of these:
 
-### Challenge A
+### Challenge A:
 
 Fit a linear model with two predictors:
 
@@ -615,7 +615,7 @@ summary(mod2)
 
 **How does this model differ from the first one?**
 
-### Challenge B
+### Challenge B:
 
 Make a scatterplot of bill length vs. body mass, colored by species, and add separate trend lines for each species.
 
