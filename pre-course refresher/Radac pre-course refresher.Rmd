@@ -3,9 +3,14 @@ title: "Advanced Data Analysis Course - Pre-Course Refresher Exercises"
 author: "Ronnie Bailey-Steinitz"
 date: "2026-04-15"
 output:
-  html_document: default
   pdf_document: default
-  word_document: default
+header-includes:
+  - \usepackage{xcolor}
+  - \definecolor{inlinecode}{HTML}{8B1E3F}
+  - \let\oldtexttt\texttt
+  - \renewcommand{\texttt}[1]{\textcolor{inlinecode}{\oldtexttt{#1}}}
+markdown:
+    wrap: 200
 ---
 
 # Pre-Course Refresher Workshop
@@ -23,11 +28,11 @@ This refresher is divided into two sessions:
 
 # Week 1: Basics
 
-## 1. Setup
+## 0. Setup
 
 Before we begin any coding, we need to make sure your files are organized correctly. Good file organization will save you a lot of confusion later in the course.
 
-### 1A. Set up your course folder
+### 0.1. Set up your course folder
 
 For this course, you should keep **all course materials in one main folder** on your computer.
 
@@ -46,27 +51,27 @@ Inside that main folder, create a second folder called:
 Your folder structure should look something like this:
 
 `Advanced_data_analysis_course/`  
-└── `pre-course refresher/`
+ &nbsp;&nbsp; --`pre-course refresher/`
 
 #### Step 3: Move your downloaded files
 
 You downloaded these two files from Google Drive into your Downloads folder:
 
-`Radac_refresher_exercises.Rmd`  
-`Palmer Penguins Raw.csv`
+- `Radac pre-course refresher.Rmd`  
+- `Palmer Penguins Raw.csv`
 
 Move both files from Downloads into the `pre-course refresher` folder.
 
 So now your folder should look like this:
 
 `Advanced_data_analysis_course/`  
-└── `pre-course refresher/`  
-&nbsp;&nbsp;&nbsp;&nbsp;└── `Radac_refresher_exercises.Rmd`  
-&nbsp;&nbsp;&nbsp;&nbsp;└── `Palmer Penguins Raw.csv`
+&nbsp;&nbsp;  --`pre-course refresher/`  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`Radac pre-course refresher.Rmd`  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`Palmer Penguins Raw.csv`
 
 ---
 
-### 1B. Check file names carefully
+### 0.2. Check file names carefully
 
 File names in R must match exactly.
 
@@ -90,7 +95,7 @@ Also make sure the file is really a `.csv` file and the R Markdown file is reall
 
 ---
 
-### 1C. Create an R Project
+### 0.3. Create an R Project
 
 We will use an R Project for this course. This is important because it helps RStudio automatically keep track of the correct working directory.
 
@@ -105,18 +110,18 @@ RStudio should now reopen inside your course project.
 
 ---
 
-### 1D. Open the refresher file from inside the project
+### 0.4. Open the refresher file from inside the project
 
 Once the project opens:
 
 1. In the `Files` pane, click into the `pre-course refresher` folder  
-2. Open `Radac_refresher_exercises.Rmd`
+2. Open `Radac pre-course refresher.Rmd`
 
 You should now be working inside the correct project.
 
 ---
 
-### 1E. What is a working directory?
+### 0.5. What is a working directory?
 
 Your working directory is the folder R is currently using to look for files and save output.
 
@@ -128,12 +133,9 @@ That means your `.csv` file is inside a subfolder called:
 
 `pre-course refresher`
 
----
-
-### 1F. Check your working directory
+Check your working directory
 
 Run:
-
 ```{r}
 getwd()
 ```
@@ -142,9 +144,19 @@ Your output should end with something like:
 
 `.../Advanced_data_analysis_course`
 
----
+If your working directory is NOT the main course folder, set it manually like this:
+```{r, eval=FALSE}
+setwd("~/Advanced_data_analysis_course")
+```
 
-### 1G. Check that R can see your files
+Then check again: 
+```{r}
+getwd()
+```
+
+
+
+Check that R can see your files
 
 Run:
 
@@ -164,12 +176,12 @@ list.files("pre-course refresher")
 
 You should see:
 
-`Radac_refresher_exercises.Rmd`  
+`Radac pre-course refresher.Rmd`  
 `penguins.csv`
 
 ---
 
-## 2. Load Packages
+## 1. Load Packages
 
 ```{r setup, message=FALSE, warning=FALSE}
 # install the package only if you have not yet, although you should have it already installed;
@@ -185,30 +197,25 @@ library(janitor)
 
 ---
 
-## 3. Import a Dataset
+## 2. Import a Dataset
 
-Because your `.csv` file is inside the `pre-course refresher` folder, use this path:
+Because your `.csv` file is inside the `pre-course refresher` folder, but your working directory is in `.../Advanced_data_analysis_course`, use this path:  
 
-```{r}
+```{r, results='hide', message=FALSE}
 penguins <- readr::read_csv(here::here("pre-course refresher/penguins.csv")) %>% 
   janitor::clean_names()
 ```
 
-Then inspect it:
-
-```{r}
-dplyr::glimpse(penguins)
-```
+> This means that from `.../Advanced_data_analysis_course`, you are navigating into the sub-folder `pre-course refresher`, and looking for the file `penguins.csv` there. 
 
 ---
 
-## 4. Warm-Up: Explore the Data
+## 3. Warm-Up: Explore the Data
 
 We will use the penguins dataset for most exercises because it contains a mix of numeric and categorical variables and includes some missing values.
 
 ### Exercise 1: First look
 
-Run the following commands and write 1-2 sentences describing what you notice about the dataset.
 
 ```{r}
 dplyr::glimpse(penguins)
@@ -233,7 +240,7 @@ ncol(penguins) # number of columns, or variables
 
 ---
 
-## 5. Exploratory Plots
+## 4. Exploratory Plots
 
 Before making polished plots with `ggplot2`, it can be useful to make quick exploratory plots.
 
@@ -250,42 +257,33 @@ hist(penguins$flipper_length_mm)
 **Questions**
 
 1. What does each histogram show you?  
-2. What does the y-axis mean?
+2. What does the y-axis mean?  
 3. Do either of these variables look skewed?  
 4. Are there any values that look unusual?  
 
 ---
 
-## 6. Review of Visualization with ggplot2
+## 5. Review of Visualization with ggplot2
 
-### Exercise 3: Scatterplot
-
-Make a scatterplot of bill length vs. bill depth, colored by species.
+### Exercise 3: Basic visualizations
 
 ```{r}
-ggplot2::ggplot(penguins, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
-  ggplot2::geom_point()
+# Make a scatterplot of bill length vs. bill depth, colored by species
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point()
+
+# Make a boxplot of body mass by species
+ggplot(penguins, aes(x = species, y = body_mass_g, fill = species)) +
+  geom_boxplot()
+
+# Make a histogram of flipper length
+ggplot(penguins, aes(x = flipper_length_mm)) +
+  geom_histogram(bins = 20)
+
 ```
 
-### Exercise 4: Boxplot
 
-Make a boxplot of body mass by species.
-
-```{r}
-ggplot2::ggplot(penguins, ggplot2::aes(x = species, y = body_mass_g, fill = species)) +
-  ggplot2::geom_boxplot()
-```
-
-### Exercise 5: Histogram
-
-Make a histogram of flipper length.
-
-```{r}
-ggplot2::ggplot(penguins, ggplot2::aes(x = flipper_length_mm)) +
-  ggplot2::geom_histogram(bins = 20)
-```
-
-### Exercise 6: Improve one plot
+### Exercise 4: Improve one plot
 
 Choose one of the plots above and improve it by adding:
 
@@ -295,15 +293,16 @@ Choose one of the plots above and improve it by adding:
 - a cleaner theme
 
 ```{r}
-ggplot2::ggplot(penguins, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
-  ggplot2::geom_point() +
-  ggplot2::labs(
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
     title = "Bill length and bill depth in penguins",
     x = "Bill length (mm)",
     y = "Bill depth (mm)"
   ) +
   scale_color_manual(values = c("orchid4", "seagreen", "darkorange")) +
-  ggplot2::theme_minimal()
+  theme_minimal()
 ```
 
 **Questions**
@@ -317,9 +316,9 @@ ggplot2::ggplot(penguins, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm, co
 
 # Week 2: Wrangling
 
-## 7. Selecting, Filtering, and Creating Variables
+## 6. Selecting, Filtering, and Creating Variables
 
-### Exercise 7: Select only a few columns
+### Exercise 5: Select only a few columns
 
 Create a new object called `penguins_small` that includes only these variables:
 
@@ -337,7 +336,13 @@ penguins_small <- penguins %>%
 penguins_small
 ```
 
-### Exercise 8: Filter rows
+**Questions**
+
+1. Is this a subset of the original data? Why or why not?  
+2. Do the means and distributions of the variables change in this new dataset?    
+
+
+### Exercise 6: Filter rows
 
 Create a dataset called `female_penguins` that includes only female penguins with non-missing body mass values.
 
@@ -349,13 +354,16 @@ glimpse(female_penguins)
 ```
 
 **Question**  
-How many female penguins are in this filtered dataset?
+
+1. Is this a subset of the original data? Why or why not?  
+2. Do the means and distributions of the variables change in this new dataset?    
+3. How many female penguins are in this filtered dataset?  
 
 ```{r}
 nrow(female_penguins) # you can also look in your "Environment" panel, and see the number of observations in the object `female_penguins`
 ```
 
-### Exercise 9: Make new variables
+### Exercise 7: Make new variables
 
 Use `dplyr::mutate()` to create:
 
@@ -380,7 +388,7 @@ glimpse(penguins_new)
 
 ---
 
-## 8. Grouping and Summarizing
+## 7. Grouping and Summarizing
 
 ### Exercise 10: Summarize by species
 
@@ -426,7 +434,7 @@ species_sex_summary
 
 ---
 
-## 9. Joining Data
+## 8. Joining Data
 
 Sometimes your data are split across multiple files. To practice joining, we will create a small second dataset.
 
@@ -458,7 +466,7 @@ glimpse(penguins_joined)
 
 ---
 
-## 10. Review of Linear Models
+## 9. Review of Linear Models
 
 We will fit a simple linear model to test whether flipper length predicts body mass.
 
@@ -503,7 +511,7 @@ ggplot2::ggplot(model_data, ggplot2::aes(x = flipper_length_mm, y = body_mass_g)
 
 ---
 
-## 11. Transformations
+## 10. Transformations
 
 In the advanced course, we will work more carefully with assumptions and model fit. Transformations are one tool that can help.
 
@@ -546,7 +554,7 @@ hist(penguins_transformed$flipper_z)
 
 ---
 
-## 12. Lab Challenge: Short Applied Practice
+## 11. Lab Challenge: Short Applied Practice
 
 Now try a short workflow on your own.
 
@@ -591,7 +599,7 @@ ggplot2::ggplot(
 
 ---
 
-## 13. Optional Challenge
+## 12. Optional Challenge
 
 If you finish early, try one or both of these:
 
@@ -624,11 +632,8 @@ What do the species-specific patterns look like?
 
 ---
 
-## Homework
 
-Use **your own dataset** for a short refresher analysis.
-
-### Homework task
+### Use your own dataset for a short refresher analysis.
 
 Choose **one variable** from your own dataset and do the following:
 
@@ -636,14 +641,6 @@ Choose **one variable** from your own dataset and do the following:
 2. make one plot  
 3. write 3-4 sentences interpreting the variable  
 4. if possible, compare it across one grouping variable, such as sex, age class, location, group, treatment, or year
-
-### What to submit
-
-Submit an `.Rmd` or knitted output that includes:
-
-- your code
-- one figure
-- a short written interpretation
 
 ---
 

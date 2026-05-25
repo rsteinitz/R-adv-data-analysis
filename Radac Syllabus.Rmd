@@ -29,7 +29,6 @@ Goal: Refresh core wrangling, visualization, and modeling skills before advanced
 ### Week 1: From Research Question to Statistical Model  
 June 12, 2026  
 **Dataset:** Hormone + behavioral dataset  
-
 - Identify variable types: continuous, count, binary, categorical, proportion  
 - Independence vs. repeated measures  
 - Cross-sectional vs. longitudinal structure  
@@ -45,7 +44,6 @@ June 12, 2026
 ### Week 2: Comparing Groups – t-tests, ANOVA & Nonparametric Alternatives  
 June 19, 2026  
 **Dataset:** Hormone dataset  
-
 - Two-sample `t.test()`  
 - Paired `t.test()`  
 - ANOVA with `aov()`  
@@ -61,7 +59,6 @@ June 19, 2026
 ### Week 3: Count Data, Skewed Data & Zero Inflation  
 June 26, 2026  
 **Dataset:** Aggression counts, parasite load, vert census data   
-
 - When normality is inappropriate  
 - Poisson regression with `glm(family = "poisson")`  
 - Detecting overdispersion  
@@ -78,7 +75,6 @@ June 26, 2026
 ### Week 4: Binary & Categorical Outcomes – Chi-Square & Logistic Regression  
 July 10, 2026  
 **Dataset:** Health status, survival, demographic transitions  
-
 - Contingency tables with `table()`  
 - `chisq.test()`  
 - `fisher.test()`  
@@ -94,7 +90,6 @@ July 10, 2026
 ### Week 5: Mixed Effects Models – Repeated Measures & Hierarchical Data  
 July 17, 2026  
 **Dataset:** Longitudinal dataset (environmental measurement?)  
-
 - Why repeated measures violate independence  
 - Random intercept models with `lme4::lmer()`  
 - Conceptual introduction to random slopes  
@@ -113,7 +108,6 @@ July 17, 2026
 ### Week 6: Model Evaluation, Interpretation & Scientific Communication  
 July 24, 2026  
 **Dataset:** Student-selected dataset  
-
 - Residual diagnostics  
 - Model comparison using AIC  
 - Interpreting interaction terms  
@@ -134,9 +128,10 @@ July 24, 2026
 July 31, 2026  
 - Each student gives 5–7 minute presentation  
 - Emphasis on:  
-  - Clear biological question  
-  - Appropriate model choice  
-  - Assumptions considered  
-  - Interpretation beyond p-values  
-  - Clean, publication-quality visualization  
+
+  -- Clear biological question  
+  -- Appropriate model choice  
+  -- Assumptions considered  
+  -- Interpretation beyond p-values  
+  -- Clean, publication-quality visualization  
   
