@@ -436,22 +436,14 @@ species_sex_summary
 
 ## 8. Joining Data
 
-Sometimes your data are split across multiple files. To practice joining, we will create a small second dataset.
-
-```{r}
-island_info <- tibble::tibble(
-  island = c("Biscoe", "Dream", "Torgersen"), # these are the given islands
-  area = c("West", "Central", "East") # these are the regions affiliated with each island-- what we want to **add** to the dataset
-)
-
-island_info
-```
-
 ### 8.1. Join the datasets
 
 Use `dplyr::left_join()` to add the `region` variable to the penguins dataset.
 
 ```{r}
+island_info <- read_csv(here::here("pre-course refresher/island_info.csv")) %>% 
+  janitor::clean_names()
+
 penguins_joined <- penguins %>%
   dplyr::left_join(island_info, by = "island") # we joined the "area" information by "island." Each observation now has information about the area that is associated with its island. 
 
