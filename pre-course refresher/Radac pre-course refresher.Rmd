@@ -438,7 +438,7 @@ species_sex_summary
 
 ### 8.1. Join the datasets
 
-Use `dplyr::left_join()` to add the `region` variable to the penguins dataset.
+Import the data and use `dplyr::left_join()` to add the `region` variable to the penguins dataset.
 
 ```{r}
 island_info <- read_csv(here::here("pre-course refresher/island_info.csv")) %>% 
