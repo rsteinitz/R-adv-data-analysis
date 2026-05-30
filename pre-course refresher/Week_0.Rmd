@@ -1,0 +1,337 @@
+---
+title: "Advanced Data Analysis Course - Pre-Course Refresher Exercises"
+author: "Ronnie Bailey-Steinitz"
+date: "`r Sys.Date()`"
+output: pdf_document
+header-includes:
+  - "\\usepackage{xcolor}"
+  - "\\definecolor{inlinecode}{HTML}{8B1E3F}"
+  - "\\let\\oldtexttt\\texttt"
+  - "\\renewcommand{\\texttt}[1]{\\textcolor{inlinecode}{\\oldtexttt{#1}}}"
+---
+
+# Pre-Course Refresher Workshop
+
+## Purpose
+
+This refresher is designed to review the most important skills from last year's introductory R course before we begin the 6-week Advanced Data Analysis course. You have already seen most of these tools before. The goal is to rebuild confidence, refresh your memory, and get everyone ready to move into more advanced statistical thinking.
+
+This refresher is divided into two sessions:
+
+- **Week 1: Basics** — project setup, working directories, importing data, exploratory summaries, and basic plots
+- **Week 2: Wrangling** — data wrangling, joins, simple models, transformations, and a short applied challenge
+
+---
+
+# Week 1: Basics
+
+## 0. Setup
+
+Before we begin any coding, we need to make sure your files are organized correctly. Good file organization will save you a lot of confusion later in the course.
+
+### 0.1. Set up your course folder
+
+For this course, you should keep **all course materials in one main folder** on your computer.
+
+#### Step 1: Create a main course folder
+
+Create a new folder somewhere easy to find on your computer. For example:
+
+`Advanced_data_analysis_course`
+
+#### Step 2: Create a subfolder for this workshop
+
+Inside that main folder, create a second folder called:
+
+`pre-course refresher`
+
+Your folder structure should look something like this:
+
+`Advanced_data_analysis_course/`  
+ &nbsp;&nbsp; --`pre-course refresher/`
+
+#### Step 3: Move your downloaded files
+
+You downloaded these two files from Google Drive into your Downloads folder:
+
+- `Radac pre-course refresher.Rmd`  
+- `penguins.csv`
+
+Move both files from Downloads into the `pre-course refresher` folder.
+
+So now your folder should look like this:
+
+`Advanced_data_analysis_course/`  
+&nbsp;&nbsp;  --`pre-course refresher/`  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`Radac pre-course refresher.Rmd`  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`penguins.csv`
+
+---
+
+### 0.2. Check file names carefully
+
+File names in R must match exactly.
+
+That means:
+
+- uppercase and lowercase letters matter
+- spaces matter
+- punctuation matters
+- file extensions matter
+
+For example:
+
+`penguins.csv` is **not** the same as:
+
+- `Penguins.csv`
+- `penguins_.csv`
+- `penguins1.CSV`
+- `penguins`
+
+Also make sure the file is really a `.csv` file and the R Markdown file is really an `.Rmd` file.
+
+
+### 0.3. Create an R Project
+
+We will use an R Project for this course. This is important because it helps RStudio automatically keep track of the correct working directory.
+
+1. Open RStudio  
+2. Go to: `File > New Project`
+3. Choose: `Existing Directory`
+4. Navigate to your main course folder:  
+   `Advanced_data_analysis_course`
+5. Click `Create Project`
+
+RStudio should now reopen inside your course project.
+
+
+
+### 0.4. Open the refresher file from inside the project
+
+Once the project opens:
+1. create a new Markdown file (.Rmd): `File > New File > R Markdown`
+2. Name it `wk0_refresher.Rmd`. This will be the script file for the refresher.
+
+
+
+### 0.5. What is a working directory?
+
+Your working directory is the folder R is currently using to look for files and save output.
+
+Because you opened an R Project, your working directory should now be:
+
+`.../Advanced_data_analysis_course`
+
+That means your `.csv` file is inside a subfolder called:
+
+`pre-course refresher`
+
+Check your working directory
+
+Run:
+```{r}
+getwd()
+```
+
+Your output should end with something like:
+
+`.../Advanced_data_analysis_course`
+
+If your working directory is NOT the main course folder, set it manually like this:
+```{r, eval=FALSE}
+# setwd("~/Advanced_data_analysis_course")
+```
+
+Then check again: 
+```{r}
+getwd()
+```
+
+
+
+Check that R can see your files
+
+Run:
+
+```{r}
+list.files()
+```
+
+You should see:
+
+`pre-course refresher`
+
+Now run:
+
+```{r}
+list.files("pre-course refresher")
+```
+
+You should see:
+
+`penguins.csv`  
+`island_info.csv`  
+
+
+## 1. Load Packages
+
+```{r setup, message=FALSE, warning=FALSE}
+# install the package only if you have not yet, although you should have it already installed;
+# you might want to update by re-installing!
+# ---------
+# install.packages(c("tidyverse", "here", "janitor"))
+
+# load packages
+library(tidyverse)
+library(here)
+library(janitor)
+
+# install.packages("skimr")
+library(skimr)
+```
+
+
+
+## 2. Import a Dataset
+
+Because your `.csv` file is inside the `pre-course refresher` folder, but your working directory is in `.../Advanced_data_analysis_course`, use this path:  
+
+```{r, results='hide', message=FALSE}
+penguins <- readr::read_csv(here::here("pre-course refresher/penguins.csv")) %>% 
+  janitor::clean_names()
+```
+
+> This means that from `.../Advanced_data_analysis_course`, you are navigating into the sub-folder `pre-course refresher`, and looking for the file `penguins.csv` there. 
+
+
+
+## 3. Warm-Up: Explore the Data
+
+We will use the penguins dataset for most exercises because it contains a mix of numeric and categorical variables and includes some missing values.
+
+### 3.1. First look
+
+
+```{r}
+dplyr::glimpse(penguins)
+
+summary(penguins) # summary of the dataset
+
+head(penguins) # shows the first 6 rows
+
+tail(penguins) # shows the last 6 rows
+
+nrow(penguins) # number of rows, or observations
+
+ncol(penguins) # number of columns, or variables
+```
+
+**Questions**
+
+1. How many rows and columns are in the dataset?  
+2. Which variables are numeric?  
+3. Which variables are categorical?  
+4. Do you notice any missing values?  
+
+
+
+## 4. Exploratory Plots
+
+Before making polished plots with `ggplot2`, it can be useful to make quick exploratory plots.
+
+### 4.1. Quick histograms with base R
+
+Use `hist()` to look at the distribution of body mass and flipper length.
+
+```{r}
+hist(penguins$body_mass_g)
+
+hist(penguins$flipper_length_mm)
+
+# here's a very cool way to combine a numeric summary of the variables with a visual one:
+# skim(penguins)
+### this does not knit well into a pdf, so it's commented out ###
+```
+
+**Questions**
+
+1. What does each histogram show you?  
+2. What does the y-axis mean?  
+3. Do either of these variables look skewed?  
+4. Are there any values that look unusual?  
+
+
+
+## 5. Review of Visualization with ggplot2
+
+### 5.1. Basic visualizations
+
+```{r}
+# Make a scatterplot of bill length vs. bill depth, colored by species
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point()
+
+# what if I want to see the data for each species?
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point()
+
+# another way of doing this:
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point() +
+  facet_wrap(~species)
+
+# Make a boxplot of body mass by species
+ggplot(penguins, aes(x = species, y = body_mass_g, fill = species)) +
+  geom_boxplot()
+
+# Make a histogram of flipper length
+ggplot(penguins, aes(x = flipper_length_mm)) +
+  geom_histogram(bins = 20, fill = "lightblue", color = "darkblue")
+
+##############
+## QUESTION: What does this mean, biologically?
+## Explain this graph
+##############
+
+```
+
+
+### 5.2. Improve one plot
+
+Choose one of the plots above and improve it by adding:
+
+- a title
+- better axis labels
+- custom colors
+- a cleaner theme
+
+```{r}
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Bill length and bill depth in penguins",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)"
+  ) +
+  scale_color_manual(values = c("orchid4", "seagreen", "darkorange")) +
+  theme_minimal()
+```
+
+**Questions**
+
+1. Which type of plot is best for comparing groups?
+2. Which type is best for showing the relationship between two numeric variables?
+3. Which plot would you use to check the distribution of one numeric variable?
+
+
+**Working on your own dataset:**   
+
+1. Inside the existing project, create a markdown file (.Rmd) which you will be using continuously and adding to each week. Name it: `Lastname_Firstname_Data.Rmd`
+2. Import the dataset into the environment and save as an object.
+3. Identify which variables have missing values.
+4. Check for misclassified columns (e.g., text stored as factors, numbers stores as text). Reclassify if necessary.
+5. Get summary statistics for two variables of different classes.
+6. Create one publishable plot with a proper title and axis labels.
+7. Knit the entire script into an HTML file; save to your working directory.
+8. Upload the knitted HTML to the course Drive folder > UPLOADS

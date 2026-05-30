@@ -1,16 +1,13 @@
 ---
 title: "Advanced Data Analysis Course - Pre-Course Refresher Exercises"
 author: "Ronnie Bailey-Steinitz"
-date: "2026-04-15"
-output:
-  pdf_document: default
+date: "`r Sys.Date()`"
+output: pdf_document
 header-includes:
-  - \usepackage{xcolor}
-  - \definecolor{inlinecode}{HTML}{8B1E3F}
-  - \let\oldtexttt\texttt
-  - \renewcommand{\texttt}[1]{\textcolor{inlinecode}{\oldtexttt{#1}}}
-markdown:
-    wrap: 200
+  - "\\usepackage{xcolor}"
+  - "\\definecolor{inlinecode}{HTML}{8B1E3F}"
+  - "\\let\\oldtexttt\\texttt"
+  - "\\renewcommand{\\texttt}[1]{\\textcolor{inlinecode}{\\oldtexttt{#1}}}"
 ---
 
 # Pre-Course Refresher Workshop
@@ -58,7 +55,7 @@ Your folder structure should look something like this:
 You downloaded these two files from Google Drive into your Downloads folder:
 
 - `Radac pre-course refresher.Rmd`  
-- `Palmer Penguins Raw.csv`
+- `penguins.csv`
 
 Move both files from Downloads into the `pre-course refresher` folder.
 
@@ -67,7 +64,7 @@ So now your folder should look like this:
 `Advanced_data_analysis_course/`  
 &nbsp;&nbsp;  --`pre-course refresher/`  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`Radac pre-course refresher.Rmd`  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`Palmer Penguins Raw.csv`
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; --`penguins.csv`
 
 ---
 
@@ -84,16 +81,15 @@ That means:
 
 For example:
 
-`Palmer Penguins Raw.csv` is **not** the same as:
+`penguins.csv` is **not** the same as:
 
-- `palmer penguins raw.csv`
-- `Palmer_penguins_raw.csv`
-- `Palmer Penguins Raw.CSV`
-- `Palmer Penguins Raw`
+- `Penguins.csv`
+- `penguins_.csv`
+- `penguins1.CSV`
+- `penguins`
 
 Also make sure the file is really a `.csv` file and the R Markdown file is really an `.Rmd` file.
 
----
 
 ### 0.3. Create an R Project
 
@@ -108,18 +104,15 @@ We will use an R Project for this course. This is important because it helps RSt
 
 RStudio should now reopen inside your course project.
 
----
+
 
 ### 0.4. Open the refresher file from inside the project
 
 Once the project opens:
+1. create a new Markdown file (.Rmd): `File > New File > R Markdown`
+2. Name it `wk0_refresher.Rmd`. This will be the script file for the refresher.
 
-1. In the `Files` pane, click into the `pre-course refresher` folder  
-2. Open `Radac pre-course refresher.Rmd`
 
-You should now be working inside the correct project.
-
----
 
 ### 0.5. What is a working directory?
 
@@ -146,7 +139,7 @@ Your output should end with something like:
 
 If your working directory is NOT the main course folder, set it manually like this:
 ```{r, eval=FALSE}
-setwd("~/Advanced_data_analysis_course")
+# setwd("~/Advanced_data_analysis_course")
 ```
 
 Then check again: 
@@ -179,8 +172,8 @@ You should see:
 `Radac pre-course refresher.Rmd`  
 `penguins.csv`
 
----
 
+# REFRESHER STARTS HERE
 ## 1. Load Packages
 
 ```{r setup, message=FALSE, warning=FALSE}
@@ -193,9 +186,12 @@ You should see:
 library(tidyverse)
 library(here)
 library(janitor)
+
+# install.packages("skimr")
+library(skimr)
 ```
 
----
+
 
 ## 2. Import a Dataset
 
@@ -208,7 +204,7 @@ penguins <- readr::read_csv(here::here("pre-course refresher/penguins.csv")) %>%
 
 > This means that from `.../Advanced_data_analysis_course`, you are navigating into the sub-folder `pre-course refresher`, and looking for the file `penguins.csv` there. 
 
----
+
 
 ## 3. Warm-Up: Explore the Data
 
@@ -238,7 +234,7 @@ ncol(penguins) # number of columns, or variables
 3. Which variables are categorical?  
 4. Do you notice any missing values?  
 
----
+
 
 ## 4. Exploratory Plots
 
@@ -252,6 +248,10 @@ Use `hist()` to look at the distribution of body mass and flipper length.
 hist(penguins$body_mass_g)
 
 hist(penguins$flipper_length_mm)
+
+# here's a very cool way to combine a numeric summary of the variables with a visual one:
+# skim(penguins)
+### this does not knit well into a pdf, so it's commented out ###
 ```
 
 **Questions**
@@ -261,7 +261,7 @@ hist(penguins$flipper_length_mm)
 3. Do either of these variables look skewed?  
 4. Are there any values that look unusual?  
 
----
+
 
 ## 5. Review of Visualization with ggplot2
 
@@ -269,8 +269,17 @@ hist(penguins$flipper_length_mm)
 
 ```{r}
 # Make a scatterplot of bill length vs. bill depth, colored by species
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point()
+
+# what if I want to see the data for each species?
 ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
   geom_point()
+
+# another way of doing this:
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point() +
+  facet_wrap(~species)
 
 # Make a boxplot of body mass by species
 ggplot(penguins, aes(x = species, y = body_mass_g, fill = species)) +
@@ -278,7 +287,12 @@ ggplot(penguins, aes(x = species, y = body_mass_g, fill = species)) +
 
 # Make a histogram of flipper length
 ggplot(penguins, aes(x = flipper_length_mm)) +
-  geom_histogram(bins = 20)
+  geom_histogram(bins = 20, fill = "lightblue", color = "darkblue")
+
+##############
+## QUESTION: What does this mean, biologically?
+## Explain this graph
+##############
 
 ```
 
@@ -312,8 +326,9 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 3. Which plot would you use to check the distribution of one numeric variable?  
 
 
----
 
+
+# WEEK 2 STARTS HERE
 # Week 2: Wrangling
 
 ## 6. Selecting, Filtering, and Creating Variables
@@ -342,7 +357,7 @@ penguins_small
 2. Do the means and distributions of the variables change in this new dataset?    
 
 
-###6.2. Filter rows
+### 6.2. Filter rows
 
 Create a dataset called `female_penguins` that includes only female penguins with non-missing body mass values.
 
@@ -361,6 +376,10 @@ glimpse(female_penguins)
 
 ```{r}
 nrow(female_penguins) # you can also look in your "Environment" panel, and see the number of observations in the object `female_penguins`
+
+# what proportion of the population is in this dataset?
+165/333
+nrow(female_penguins)/nrow(penguins)
 ```
 
 ### 6.3. Make new variables
@@ -384,9 +403,9 @@ glimpse(penguins_new)
 
 1. Why might `body_mass_kg` be useful?  
 2. Why might `bill_ratio` be useful?  
-3. What happens to `bill_ratio` if either bill measurement is missing?  
+3. What happens to `bill_ratio` if either bill measurement is missing?    
 
----
+
 
 ## 7. Grouping and Summarizing
 
@@ -408,6 +427,10 @@ species_summary <- penguins %>%
   )
 
 species_summary
+
+# if you simply want to see the numbers per species
+penguins %>% count(species)
+# df %>% count(variable) # for categorical or binary variables
 ```
 
 ### 7.2. Summarize by species and sex
@@ -415,15 +438,20 @@ species_summary
 Now calculate mean body mass by both species and sex.
 
 ```{r}
+# here we group by more than one category:
 species_sex_summary <- penguins %>%
   dplyr::group_by(species, sex) %>%
   dplyr::summarise(
-    mean_body_mass = mean(body_mass_g, na.rm = TRUE),
     n = dplyr::n(),
+    mean_body_mass = mean(body_mass_g, na.rm = TRUE),
     .groups = "drop"
   )
 
 species_sex_summary
+
+# if you simply want to see the numbers:
+penguins %>% count(species, sex)
+# df %>% count(var1, var2) # again, categorical variables
 ```
 
 **Questions**
@@ -431,8 +459,9 @@ species_sex_summary
 1. Which species appears heaviest on average?  
 2. Within species, do males and females differ in body mass?  
 3. Why is it useful to include `n` when summarizing by group?  
+*-> tells us how many observations were used to calculate the summary statistics for each group. This helps us understand whether a mean is based on many individuals (more reliable) or only a few individuals (less reliable and potentially misleading).*  
 
----
+
 
 ## 8. Joining Data
 
@@ -443,6 +472,8 @@ Import the data and use `dplyr::left_join()` to add the `region` variable to the
 ```{r}
 island_info <- read_csv(here::here("pre-course refresher/island_info.csv")) %>% 
   janitor::clean_names()
+
+island_info
 
 penguins_joined <- penguins %>%
   dplyr::left_join(island_info, by = "island") # we joined the "area" information by "island." Each observation now has information about the area that is associated with its island. 
@@ -455,8 +486,9 @@ glimpse(penguins_joined)
 1. Did the number of rows change after the join? Why or why not?  
 2. What would happen if one island name were misspelled in one of the datasets?  
 3. Why do we need a shared column when joining datasets?  
+*-> it acts like a common identifier that tells R which rows from the two datasets belong together. Without a shared column (or if the values do not match), R would not know how to correctly combine the information across datasets.*
 
----
+
 
 ## 9. Review of Linear Models
 
@@ -481,12 +513,12 @@ summary(mod1)
 
 ### Questions
 
-1. What is the response (outcome) variable in this model?  
-2. What is the predictor variable in this model?  
-3. Is the relationship between flipper length and body mass positive or negative? How can you tell from the output?  
-4. What does the intercept represent? Does it make biological sense in this case?  
-5. What does the p-value tell you about the relationship between flipper length and body mass?  
-6. What does the R-squared value tell you?  
+1. What is the response (outcome) variable in this model? *The response (outcome) variable is body_mass_g because it is the variable being predicted in the model.*  
+2. What is the predictor variable in this model? *The predictor variable is flipper_length_mm because it is the variable being used to explain or predict body mass.*  
+3. Is the relationship between flipper length and body mass positive or negative? How can you tell from the output? *The relationship is positive. We can tell because the coefficient (Estimate) for flipper_length_mm is positive (50.15). This means that as flipper length increases, body mass also tends to increase.*  
+4. What does the intercept represent? Does it make biological sense in this case? *The intercept (-5872.09) represents the predicted body mass when flipper length is 0 mm. This does not make biological sense because a penguin cannot have a flipper length of 0 mm. However, the intercept is still necessary mathematically for fitting the regression line.*  
+5. What does the p-value tell you about the relationship between flipper length and body mass? *The p-value (< 2e-16) tells us that there is a very strong statistical relationship between flipper length and body mass. The relationship is highly unlikely to be due to random chance alone.*  
+6. What does the R-squared value tell you? *The R-squared value (0.7621) tells us that about 76% of the variation in penguin body mass can be explained by flipper*  
 
 ### 9.2. Visualize the model
 
@@ -501,7 +533,6 @@ ggplot2::ggplot(model_data, ggplot2::aes(x = flipper_length_mm, y = body_mass_g)
 1. Does this visualized relationship match the model output from the linear regression?  
 2. What does the slope mean in this model, biologically?  
 
----
 
 ## 10. Transformations
 
@@ -544,7 +575,7 @@ hist(penguins_transformed$flipper_z)
 2. What does a z-score represent?  
 3. Why might standardizing predictors be useful in advanced models?  
 
----
+
 
 ## 11. Lab Challenge: Short Applied Practice
 
@@ -589,7 +620,7 @@ ggplot2::ggplot(
   ggplot2::geom_boxplot()
 ```
 
----
+
 
 ## 12. Optional Challenge
 
@@ -622,7 +653,7 @@ ggplot2::ggplot(penguins2, aes(x = bill_length_mm, y = body_mass_g, color = spec
 
 What do the species-specific patterns look like?
 
----
+
 
 
 ### Use your own dataset for a short refresher analysis.
@@ -634,7 +665,7 @@ Choose **one variable** from your own dataset and do the following:
 3. write 3-4 sentences interpreting the variable  
 4. if possible, compare it across one grouping variable, such as sex, age class, location, group, treatment, or year
 
----
+
 
 ## Final Reflection
 
