@@ -335,3 +335,99 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 6. Create one publishable plot with a proper title and axis labels.
 7. Knit the entire script into an HTML file; save to your working directory.
 8. Upload the knitted HTML to the course Drive folder > UPLOADS
+
+## 6. Selecting and Filtering Data
+### 6.1 Select only a few columns 
+```{r}
+
+penguins_small <- penguins %>% 
+  dplyr::select(species, island, sex, bill_length_mm, body_mass_g)
+
+```
+
+### 6.2 Filter rows
+```{r}
+
+female_penguins <- penguins %>% 
+  dplyr::filter(sex == "FEMALE")
+
+male_penguins <- penguins %>% 
+  dplyr::filter(sex != "FEMALE")
+
+unique(penguins$sex)
+
+mean(penguins$body_mass_g)
+mean(female_penguins$body_mass_g)
+
+body_mass_by_sex <- penguins %>% 
+  group_by(sex) %>% 
+  summarize(
+    Mean = mean(body_mass_g, na.rm = T)
+  )
+
+nrow(female_penguins)/nrow(penguins)
+165/333
+```
+
+### 6.3 Making New Variables
+```{r}
+
+penguins_new <- penguins %>% 
+  mutate(body_mass_kg = body_mass_g/1000,
+         bill_ratio = bill_length_mm/bill_depth_mm)
+
+```
+
+
+## 7. Grouping and Summarizing
+### 7.1 Summarize by species
+
+```{r}
+
+species_summary <- penguins %>% 
+  group_by(species) %>% 
+  summarize(
+    n = n(),
+    mean_body_mass = mean(body_mass_g),
+    sd_body_mass = sd(body_mass_g),
+    mean_flipper_length = mean(flipper_length_mm),
+    max_body_mass = max(body_mass_g)
+  )
+
+```
+
+
+
+## 8. Joining Data
+### 8.1 Join the datasets
+```{r}
+
+island_info <- read_csv(here::here("pre-course refresher/island_info.csv")) %>% 
+  janitor::clean_names()
+
+penguins_joined <- penguins %>% 
+  left_join(island_info, by = "island")
+
+
+```
+
+
+## 9. Linear Models
+```{r}
+# flipper_length_mm
+# body_mass_g
+
+model_data <- penguins %>% 
+  dplyr::filter(!is.na(flipper_length_mm), !is.na(body_mass_g))
+
+mod1 <- lm(body_mass_g ~ flipper_length_mm, model_data)
+
+summary(mod1)
+
+```
+
+
+
+
+
+

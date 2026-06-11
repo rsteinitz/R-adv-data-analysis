@@ -34,12 +34,6 @@ This week is about building that foundation.
 
 ```{r, message=FALSE, warning=FALSE}
 
-# install packages only if you have not yet
-# ---------
-# install.packages("tidyverse")
-# install.packages("janitor")
-# install.packages("here")
-
 # Load packages
 library(tidyverse)
 library(janitor)
@@ -68,65 +62,29 @@ The dataset includes:
 # check that you are in the correct working directory
 getwd()
 
-# list files and folders in the current working directory
-list.files()
-
 # list files inside the Week 1 folder
 list.files("Week 1")
 
 # Load dataset
-data <- readr::read_csv(here("Week 1", "gorilla_hormone_behavior_data.csv")) %>% 
+data <- readr::read_csv(here::here("Week 1/gorilla_hormone_behavior_data.csv")) %>% 
   janitor::clean_names()
 
 # Preview the structure
 glimpse(data, width = 80)
-head(data)
 
-# Check column names
-names(data)
-
-```
-
-> `janitor::clean_names()` standardizes column names.  
-> It replaces spaces, capital letters, and symbols with clean lowercase names and underscores.
-
-## 2. Inspect Dataset Structure
-
-Before modeling anything, we need to understand the structure of the dataset.
-
-```{r}
-
-# Basic overview
-glimpse(data, width = 80)
-
-# Summary of each column
-summary(data)
-
-# Number of rows
-nrow(data)
-
-# Number of columns
-ncol(data)
-
-# Column names
-names(data)
-
-# ================================================================================
-# Q: How many rows are in this dataset?
-# Q: How many columns are in this dataset?
-# Q: What does one row represent?
-# ================================================================================
+# look at a particular var
+data %>% 
+  count(age_class)
 
 ```
 
 
-## 3. Identify Variable Types
+## 2. Numeric Variables
 
-A major goal this week is to identify different variable types.
-
+A major goal this week is to identify different variable types.  
 Different variable types often require different statistical models.
 
-### 3.1 Continuous Variables
+### 2.1 Continuous Variables
 
 A **continuous variable** is numeric and can take many possible values.
 
@@ -139,6 +97,12 @@ Examples in this dataset include:
 
 ```{r}
 
+# ================================================================================
+# Q: Which variables are continuous???
+# ================================================================================
+str(data)
+glimpse(data)
+
 # Let's look at some variables
 summary(data$age_years)
 summary(data$sex)
@@ -149,9 +113,6 @@ summary(data$parasite_load)
 
 # Check class
 class(data$cortisol_ng_ml) # this is a numeric variable
-# as opposed to:
-class(data$sex) # this is a character variable... which we can later convert to categorical
-
 class(data$testosterone_ng_ml) # numeric
 class(data$age_years) # numeric
 
@@ -160,10 +121,16 @@ class(data$age_years) # numeric
 # Q: What is the mean testosterone value?
 # ================================================================================
 
+ggplot(data, aes(x = cortisol_ng_ml)) + 
+  geom_histogram() + 
+  geom_vline(aes(xintercept = mean(data$cortisol_ng_ml)), 
+             color = "red",
+             linetype = "dashed")
+
 ```
 
 
-### 3.2 Count Variables
+### 2.2 Count Variables
 
 A **count variable** is numeric, but it represents the number of times something happened.
 
@@ -182,17 +149,10 @@ Examples in this dataset include:
 ```{r}
 
 summary(data$aggression_events)
-summary(data$parasite_load)
-
 class(data$aggression_events) # class is numeric, and these are continuous, but they are counts and tend to be 0-inflated
-class(data$parasite_load)
 
-# note how the min and max are round numbers- 0 and 9 or 106
+# note how the min and max are round numbers- 0 and 8
 # the mean is a number with a decimal, because a mean of counts is not necessarily a round number. For example, the mean of (1, 4, and 5) is 3.333 
-# mean(c(1,4,5))
-
-# How many unique values?
-unique(data$aggression_events)
 
 # Count how many rows have each aggression value
 count(data, aggression_events)
@@ -200,22 +160,40 @@ count(data, aggression_events)
 
 # ================================================================================
 # Q: Why is aggression_events a count variable rather than a continuous variable?
+# ---> Mathematically, a count variable is numeric, but it is not continuous because it cannot take every value within a range. 
+# for example, cortisol can take any of the following:
+# 14.2
+# 14.21
+# 14.213
+# 14.2137
+
+# There are infinitely many possible values between 14 and 15.
+# Count variables have different statistical properties that may violate assumptions of ordinary linear models, for example.
+# because the model might predict a negative number... when that is impossible for a count variable. 
+# ================================================================================
+
+# ================================================================================
 # Q: Can a count variable have decimal values?
 # Q: Can a count variable be negative?
 # ================================================================================
 
+ggplot(data, aes(x = aggression_events)) + 
+  geom_histogram()
+
+# ================================================================================
+# Q: Why does the distribution have breaks between columns?
+# ================================================================================
+
 ```
 
-### 3.3 Binary Variables
+### 2.3 Binary Variables
 
-A **binary variable** has two possible values.
+A **binary variable** has two possible values: 0 or 1. 
 
 Examples in this dataset include:
 
 - `respiratory_signs`
 - `injury_status`
-- `sex` 
-*...although `sex` might also have more categories, like Unknown, which will make it categorical, not binary!*
 
 In this dataset, `respiratory_signs` and `injury_status` are coded as:
 
@@ -226,68 +204,46 @@ In this dataset, `respiratory_signs` and `injury_status` are coded as:
 
 class(data$respiratory_signs)
 class(data$injury_status)
-class(data$sex)
 
-table(data$respiratory_signs)
-table(data$injury_status)
-table(data$sex)
+data %>% 
+  count(respiratory_signs)
+
+data %>% 
+  count(injury_status)
 
 # ================================================================================
 # Q: What proportion of samples have respiratory signs?
 # Q: What proportion of samples have injury signs?
-# Q: Is sex binary in this dataset?
 # ================================================================================
 
-```
+ggplot(data, aes(respiratory_signs)) + 
+  geom_histogram() + 
+   geom_vline(aes(xintercept = mean(data$respiratory_signs)), 
+             color = "red",
+             linetype = "dashed")
 
-
-```{r}
+# ================================================================================
+# Q: Why does the distribution have breaks between columns?
+# Q: Why is the mean not exactly in between the two columns? 
+# ================================================================================
 
 # Proportion of samples with respiratory signs
+count(data, respiratory_signs)
+32/240 # number of observations with respiratory signs out of all observations
+
+# another way to do this: 
 mean(data$respiratory_signs)
 
+# ================================================================================
+# Q: what is the proportion of observations of indivs with injuries?
+# ================================================================================
 # Proportion of samples with injury signs
 mean(data$injury_status)
 
 ```
 
 
-### 3.4 Categorical Variables
-
-A **categorical variable** describes group membership.
-
-Examples in this dataset include:
-
-- `group`
-- `sex`
-- `age_class`
-- `observer`
-
-```{r}
-
-class(data$group)
-class(data$age_class)
-class(data$observer)
-
-# Unique categories
-unique(data$group)
-unique(data$age_class)
-unique(data$observer)
-
-# Counts per category
-count(data, group, sort = TRUE)
-count(data, age_class)
-count(data, observer)
-
-# ================================================================================
-# Q: Which group has the most observations?
-# Q: Which age class has the most observations?
-# Q: Why is observer a categorical variable?
-# ================================================================================
-
-```
-
-### 3.5 Proportion Variables
+### 2.4 Proportion Variables
 
 A **proportion variable** is numeric but bounded between 0 and 1.
 
@@ -299,8 +255,6 @@ class(data$feeding_time_prop)
 
 summary(data$feeding_time_prop)
 
-range(data$feeding_time_prop)
-
 # ================================================================================
 # Q: Why is feeding_time_prop not a count variable?
 # Q: What are the lowest and highest feeding time proportions?
@@ -309,346 +263,85 @@ range(data$feeding_time_prop)
 
 ```
 
-## 4. Cross-Sectional vs. Longitudinal Data
+Proportions are **continuous**, but they are bound between 0 and 1, which makes them behave differently from unconstrained continuous variables like `age`, `cortisol`, or `body mass`.
 
-A **cross-sectional** dataset has one observation per individual or unit.
 
-A **longitudinal** dataset follows the same individuals over time.
 
-This dataset contains repeated samples from the same gorillas, so it has a longitudinal or repeated-measures structure.
-
+## 3. ANALYSIS
+Let's ask this question: Do gorillas with more aggression events have higher cortisol?
 ```{r}
 
-# How many samples per gorilla?
-samples_per_gorilla <- data %>%
-  count(gorilla_id, gorilla_name, sort = TRUE)
-
-samples_per_gorilla
-
-# How many unique gorillas?
-length(unique(data$gorilla_id))
-
-# How many total samples?
-nrow(data)
-
-# ================================================================================
-# Q: Do all gorillas have more than one sample?
-# Q: Why does repeated sampling matter for statistical models?
-# Q: Are these observations independent?
-# ================================================================================
-
-```
-
-
-### 4.1 Visualize repeated measures
-
-```{r}
-
-ggplot(samples_per_gorilla, aes(x = reorder(gorilla_name, n), y = n)) +
-  geom_col() +
-  coord_flip() +
-  labs(
-    title = "Number of samples per gorilla",
-    x = "Gorilla",
-    y = "Number of samples"
-  ) +
-  theme_minimal()
-
-```
-
-> If the same individual appears multiple times, observations from that individual are likely more similar to each other than to observations from other individuals.  
-> This violates the assumption of full independence and is one reason we may later use mixed-effects models.
-
-
-## 5. Diagnose Distributions
-
-Before choosing a model, we need to look at the distribution of the response variable.
-
-We will practice with:
-
-- histograms
-- density plots
-- QQ plots
-
-### 5.1 Histogram with `geom_histogram()`
-
-A histogram shows how often values fall within different ranges.
-
-```{r}
-
-ggplot(data, aes(x = cortisol_ng_ml)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
-  labs(
-    title = "Distribution of cortisol",
-    x = "Cortisol (ng/mL)",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-# ================================================================================
-# Q: Is cortisol evenly distributed?
-# Q: Does it look normally distributed?
-# Q: Is it right-skewed, left-skewed, or roughly symmetric?
-# ================================================================================
-
-```
-
-### 5.2 Density plot with `geom_density()`
-
-A density plot shows a smoothed version of the distribution.
-
-```{r}
-
-ggplot(data, aes(x = cortisol_ng_ml)) +
-  geom_density(fill = "lightblue", alpha = 0.6) +
-  labs(
-    title = "Density plot of cortisol",
-    x = "Cortisol (ng/mL)",
-    y = "Density"
-  ) +
-  theme_minimal()
-
-```
-
-
-### 5.3 Compare distributions by group
-
-```{r}
-
-ggplot(data, aes(x = cortisol_ng_ml, fill = sex)) +
-  geom_density(alpha = 0.5) +
-  labs(
-    title = "Cortisol distribution by sex",
-    x = "Cortisol (ng/mL)",
-    y = "Density"
-  ) +
-  theme_minimal()
-
-```
-
-
-### 5.4 QQ plot with `qqnorm()` and `qqline()`
-
-QQ plots help us visually compare our data to a normal distribution.
-
-If the points fall close to the line, the variable is closer to normally distributed.
-
-```{r}
-
-qqnorm(data$cortisol_ng_ml)
-qqline(data$cortisol_ng_ml)
-
-# ================================================================================
-# Q: Do the cortisol values follow the line closely?
-# Q: What does this tell us about whether cortisol is normally distributed?
-# ================================================================================
-
-```
-
-### 5.5 Compare raw and log-transformed cortisol
-
-Hormone data are often right-skewed. A log transformation can sometimes make the distribution more symmetric.
-
-```{r}
-
-data <- data %>%
-  mutate(
-    log_cortisol_ng_ml = log(cortisol_ng_ml),
-    log_testosterone_ng_ml = log(testosterone_ng_ml)
-  )
-
-# raw cortisol
-ggplot(data, aes(x = cortisol_ng_ml)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
-  labs(
-    title = "Raw cortisol",
-    x = "Cortisol (ng/mL)",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-# log cortisol
-ggplot(data, aes(x = log_cortisol_ng_ml)) +
-  geom_histogram(bins = 30, fill = "darkgreen", color = "white") +
-  labs(
-    title = "Log-transformed cortisol",
-    x = "Log cortisol",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-```
-
-### 5.6 QQ plots for CORT
-```{r}
-
-# QQ plot for raw cortisol
-qqnorm(data$cortisol_ng_ml)
-qqline(data$cortisol_ng_ml)
-
-# QQ plot for log cortisol
-qqnorm(data$log_cortisol_ng_ml)
-qqline(data$log_cortisol_ng_ml)
-
-# ================================================================================
-# Q: Which looks more normally distributed: raw cortisol or log cortisol?
-# Q: Why might this matter for choosing a model?
-# ================================================================================
-
-```
-
-
-## 6. Visualize Grouped Summaries
-
-Grouped plots are useful for comparing values across categories.
-
-### 6.1 Testosterone by sex
-
-```{r}
-
-ggplot(data, aes(x = sex, y = testosterone_ng_ml, fill = sex)) +
-  geom_boxplot(alpha = 0.7) +
-  labs(
-    title = "Testosterone by sex",
-    x = "Sex",
-    y = "Testosterone (ng/mL)"
-  ) +
-  theme_minimal()
-
-# ================================================================================
-# Q: Which sex has higher testosterone values in this dataset?
-# Q: Is there overlap between groups?
-# Q: What kind of model might we use if testosterone were the response variable?
-# ================================================================================
-
-```
-
-
-### 6.2 Cortisol and aggression
-
-```{r}
+# How might we try to answer the question:
+# **Do gorillas with more aggression events have higher cortisol?**
 
 ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml)) +
-  geom_jitter(width = 0.2, alpha = 0.5) +
-  geom_smooth(method = "lm", se = TRUE) +
-  labs(
-    title = "Cortisol and aggression events",
-    x = "Aggression events",
-    y = "Cortisol (ng/mL)"
-  ) +
-  theme_minimal()
+  geom_point() +
+  geom_smooth(method = "lm")
 
-# ================================================================================
-# Q: What kind of variable is aggression_events?
-# Q: What kind of variable is cortisol_ng_ml?
-# Q: Does the relationship look positive, negative, or flat?
-# ================================================================================
+# so we can write a model to test this
+mod1 <- lm(data = data, cortisol_ng_ml~aggression_events)
+summary(mod1)
+# --> For every additional aggression event, cortisol increases by about 2.15 ng/mL {the `estimate` of `aggression_events`}
 
-```
+# ==============================================
 
+# ...now, what if we want to ask: 
+# **Does aggression predict cortisol after accounting for injury status?**
 
-### 6.3 Feeding time by group
+# here, we include a **CONTROL VARIABLE** injury status:
+mod2 <- lm(data = data, cortisol_ng_ml~aggression_events + injury_status)
+summary(mod2)
 
-```{r}
+# the coefficient of `aggression events` changed: 
+# 2.15  -->  1.86
+# This tells us that some of the relationship between aggression and cortisol was actually shared with injury status.
 
-ggplot(data, aes(x = group, y = feeding_time_prop, fill = group)) +
-  geom_boxplot(alpha = 0.7) +
-  coord_flip() +
-  labs(
-    title = "Feeding time proportion by group",
-    x = "Group",
-    y = "Feeding time proportion"
-  ) +
-  theme_minimal()
+# In other words: more aggressive individuals may be somewhat more likely to be injured injured individuals have higher cortisol
 
-# ================================================================================
-# Q: What kind of variable is feeding_time_prop?
-# Q: What kind of variable is group?
-# Q: Why might group-level differences matter biologically?
-# ================================================================================
+# So when injury enters the model, aggression itself loses a little explanatory power. 
+# but p = 1.0e-11, so **aggression** remains strongly significant
 
-```
+# Now, the coefficient of injury_status = 6.43
+# and since injury_status is either 0 or 1, then injured gorillas have cortisol values that are, on average, about 6.4 ng/mL higher than non-injured gorillas, after accounting for aggression, which is a pretty substantial effect.
 
+# but this doesn't necessarily mean that injury is a better predictor.
+# because the predictors (aggression vs. injury) are measured on entirely different scales. 
+# --> 1 unit of aggression means "+1 aggression event". 
+# --> 1 unit of injur means going from uninjured to injured.
 
-### 6.4 Parasite load by age class
+# ==============================================
 
-```{r}
+# So, what /CAN/ we say?? 
+# "Injury status contributes important additional information beyond aggression."
+# R^2 increased: 0.228 --> 0.275, so the model now explains 27.5% instead of 22.8% of the variation we see. 
 
-ggplot(data, aes(x = age_class, y = parasite_load, fill = age_class)) +
-  geom_boxplot(alpha = 0.7) +
-  labs(
-    title = "Parasite load by age class",
-    x = "Age class",
-    y = "Parasite load"
-  ) +
-  theme_minimal()
+# ==============================================
 
-# ================================================================================
-# Q: What kind of variable is parasite_load?
-# Q: What kind of variable is age_class?
-# Q: Would a standard linear model be the best choice for parasite_load? Why or why not?
-# ================================================================================
+# In Model 1, aggression predicts cortisol.
+# In Model 2, aggression still predicts cortisol, even after accounting for injury status. Injury status also predicts cortisol, even after accounting for aggression.
 
-```
+# ==============================================
+### That is the essence of multiple regression.
+# ==============================================
 
 
-### 6.5 Respiratory signs by group size
+# and we can plot this as well, where this relationship becomes more apparent: 
+ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml, group = injury_status)) +
+  geom_point() +
+  geom_smooth(method = "lm", aes(color = as.factor(injury_status)))
 
-For binary variables, we often summarize the proportion of observations coded as 1.
+# if we used: `aes(color = injury_status)`, without "as.factor", 
+# ggplot assumes `injury_status` is a continuous variable.
+# which makes sense for something like `body_mass` or `age`. 
 
-```{r}
-
-resp_summary <- data %>%
-  group_by(group, group_size) %>%
-  dplyr::summarise(
-    respiratory_prop = mean(respiratory_signs),
-    n = n(),
-    .groups = "drop"
-  )
-
-resp_summary
-
-ggplot(resp_summary, aes(x = group_size, y = respiratory_prop)) +
-  geom_point(size = 3) +
-  geom_smooth(method = "lm") +
-  labs(
-    title = "Proportion of observations with respiratory signs by group size",
-    x = "Group size",
-    y = "Proportion with respiratory signs"
-  ) +
-  theme_minimal()
-
-# ================================================================================
-# Q: What kind of variable is respiratory_signs?
-# Q: Why did we summarize it using mean()?
-# Q: What does a mean of 0.25 mean for a binary 0/1 variable?
-# ================================================================================
+# but `injury_status` is not-- it can either be 0 or 1. 
+# so we're telling ggplot: Don't treat these as numbers. Treat them as categories.
 
 ```
 
 
-## 7. From Research Question to Model Type
-
-A statistical model should follow from the biological question and the response variable.
-
-The most important first question is:
-
-> **What kind of response variable do I have?**
-
-### 7.1 Simple statistical decision framework
-
-| Biological question | Response variable | Response type | Possible model family |
-|---|---|---|---|
-| Does aggression predict cortisol? | `cortisol_ng_ml` | continuous, skewed | linear model on log-transformed response |
-| Does sex predict testosterone? | `testosterone_ng_ml` | continuous, skewed | linear model on log-transformed response |
-| Does age class predict parasite load? | `parasite_load` | count | Poisson or negative binomial model |
-| Does group size predict respiratory signs? | `respiratory_signs` | binary | logistic regression |
-| Does group predict feeding time? | `feeding_time_prop` | proportion | beta regression or transformed linear model |
-| Do individuals differ in hormone values over time? | repeated samples | non-independent | mixed-effects model |
-
-\
-
-### 7.2 Important model-selection questions
+## 4. Considerations
+### 4.1 Important model-selection questions
 
 Before choosing a model, ask:
 
@@ -662,169 +355,10 @@ Before choosing a model, ask:
 8. Are predictors continuous, categorical, binary, count, or proportion?
 9. Does the research question involve group differences, relationships, prediction, or repeated measures?
 
-\
-
-### 7.3 Example 1: Continuous response
-
-Research question:
-
-> Do gorillas with more aggression events have higher cortisol?
-
-Response variable:
-
-`cortisol_ng_ml`
-
-Predictor variable:
-
-`aggression_events`
-
-```{r}
-
-# Raw response
-ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml)) +
-  geom_jitter(width = 0.2, alpha = 0.5) +
-  geom_smooth(method = "lm") +
-  theme_minimal()
-
-# Log-transformed response
-ggplot(data, aes(x = aggression_events, y = log_cortisol_ng_ml)) +
-  geom_jitter(width = 0.2, alpha = 0.5) +
-  geom_smooth(method = "lm") +
-  theme_minimal()
-
-# ================================================================================
-# Q: What is the response variable?
-# Q: What type of variable is the response?
-# Q: Are observations independent?
-# Q: What kind of model might be appropriate?
-# ================================================================================
-
-```
-
-
-### 7.4 Example 2: Count response
-
-Research question:
-
-> Does parasite load differ by age class?
-
-Response variable:
-
-`parasite_load`
-
-Predictor variable:
-
-`age_class`
-
-```{r}
-
-ggplot(data, aes(x = parasite_load)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
-  labs(
-    title = "Distribution of parasite load",
-    x = "Parasite load",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-ggplot(data, aes(x = age_class, y = parasite_load, fill = age_class)) +
-  geom_boxplot(alpha = 0.7) +
-  theme_minimal()
-
-# ================================================================================
-# Q: What is the response variable?
-# Q: What type of variable is the response?
-# Q: Why might a normal linear model not be ideal here?
-# Q: What kind of model might be appropriate?
-# ================================================================================
-
-```
-
-
-### 7.5 Example 3: Binary response
-
-Research question:
-
-> Are respiratory signs more likely in larger groups?
-
-Response variable:
-
-`respiratory_signs`
-
-Predictor variable:
-
-`group_size`
-
-```{r}
-
-ggplot(data, aes(x = factor(respiratory_signs))) +
-  geom_bar(fill = "cyan4") +
-  labs(
-    title = "Counts of respiratory signs",
-    x = "Respiratory signs: 0 = no, 1 = yes",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-ggplot(
-  resp_summary,
-  aes(x = group_size, y = respiratory_prop)
-) +
-  geom_point(size = 3) +
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_minimal()
-
-# ================================================================================
-# Q: What is the response variable?
-# Q: What type of variable is the response?
-# Q: What kind of model might be appropriate?
-# ================================================================================
-
-```
-
-
-### 7.6 Example 4: Proportion response
-
-Research question:
-
-> Does feeding time proportion differ by group?
-
-Response variable:
-
-`feeding_time_prop`
-
-Predictor variable:
-
-`group`
-
-```{r}
-
-ggplot(data, aes(x = feeding_time_prop)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
-  labs(
-    title = "Distribution of feeding time proportion",
-    x = "Feeding time proportion",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-ggplot(data, aes(x = group, y = feeding_time_prop, fill = group)) +
-  geom_boxplot(alpha = 0.7) +
-  coord_flip() +
-  theme_minimal()
-
-# ================================================================================
-# Q: What is the response variable?
-# Q: What type of variable is the response?
-# Q: Why might proportions require special care in modeling?
-# ================================================================================
-
-```
-
 
 # Skills Application -- Lab
 
-## 8. Lab Challenge: Choose the Model Type
+## 5. Lab Challenge: Choose the Model Type
 
 For this lab, your goal is **not** to run the final model yet.
 
@@ -841,7 +375,7 @@ For each question below, answer:
 7. What general model type might be appropriate?
 
 
-### 8.1 Question 1
+### 5.1 Question 1
 
 > Do gorillas with more aggression events have higher cortisol?
 
@@ -861,7 +395,7 @@ _Useful plot:_
 _Possible model type:_  
 
 
-### 8.2 Question 2
+### 5.2 Question 2
 
 > Are respiratory signs more likely in larger groups?
 
@@ -881,7 +415,7 @@ _Useful plot:_
 _Possible model type:_  
 
 
-### 8.3 Question 3
+### 5.3 Question 3
 
 > Does feeding time proportion differ by group?
 
@@ -901,7 +435,7 @@ _Useful plot:_
 _Possible model type:_  
 
 
-### 8.4 Optional: Your own biological question
+### 5.4 Optional: Your own biological question
 
 Write one biological question using this dataset or your own dataset.
 
@@ -924,75 +458,3 @@ _Possible model type:_
 
 ------------------------------------------------------------------------
 
-## Summary
-
-This week we:
-
-- loaded and inspected a gorilla hormone + behavioral dataset
-- identified continuous, count, binary, categorical, and proportion variables
-- discussed cross-sectional vs. longitudinal data
-- discussed independence vs. repeated measures
-- diagnosed distributions using histograms, density plots, and QQ plots
-- compared raw and log-transformed hormone values
-- practiced linking biological questions to possible model types
-
-Next week, we will start fitting and interpreting linear models more formally.
-
-
-# Optional - Additional Practice
-
-```{r}
-
-# Count observations by group and sex
-data %>%
-  dplyr::count(group, sex, sort = TRUE)
-
-# Summarize hormone values by sex
-data %>%
-  dplyr::group_by(sex) %>%
-  dplyr::summarise(
-    mean_cortisol = mean(cortisol_ng_ml, na.rm = TRUE),
-    median_cortisol = median(cortisol_ng_ml, na.rm = TRUE),
-    mean_testosterone = mean(testosterone_ng_ml, na.rm = TRUE),
-    median_testosterone = median(testosterone_ng_ml, na.rm = TRUE),
-    n = n(),
-    .groups = "drop"
-  )
-
-# Summarize feeding time by group
-data %>%
-  dplyr::group_by(group) %>%
-  dplyr::summarise(
-    mean_feeding_time = mean(feeding_time_prop, na.rm = TRUE),
-    median_feeding_time = median(feeding_time_prop, na.rm = TRUE),
-    n = dplyr::n(),
-    .groups = "drop"
-  ) %>%
-  dplyr::arrange(desc(mean_feeding_time))
-
-# Density plot of log testosterone by sex
-ggplot(data, aes(x = log_testosterone_ng_ml, fill = sex)) +
-  geom_density(alpha = 0.5) +
-  labs(
-    title = "Log testosterone distribution by sex",
-    x = "Log testosterone",
-    y = "Density"
-  ) +
-  theme_minimal()
-
-# Parasite load histogram by age class
-ggplot(data, aes(x = parasite_load)) +
-  geom_histogram(bins = 20, fill = "lightblue", color = "black") +
-  facet_wrap(~ age_class) +
-  labs(
-    title = "Parasite load by age class",
-    x = "Parasite load",
-    y = "Count"
-  ) +
-  theme_minimal()
-
-# Identify individuals with repeated measurements
-data %>%
-  dplyr::count(gorilla_id, gorilla_name, sort = TRUE)
-
-```
