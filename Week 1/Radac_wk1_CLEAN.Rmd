@@ -1,0 +1,192 @@
+---
+title: "Week 1: From Research Question to Statistical Model"
+author: "Author"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+editor_options:
+  chunk_output_type: console
+  markdown:
+    wrap: 200
+---
+
+# Skills Learning -- Lecture
+
+This week, we are shifting from basic R skills toward statistical thinking.
+
+In the introductory course, we focused on importing data, exploring data, cleaning columns, summarizing variables, and making plots. In this advanced course, we will build on those skills and ask a new question:
+
+> **Given my biological question and my data, what kind of statistical model should I use?**
+
+
+## 0. Load Required Packages
+```{r, message=FALSE, warning=FALSE}
+
+# Load packages
+library(tidyverse)
+library(janitor)
+library(here)
+
+```
+
+
+## 1. Load and Preview the Dataset
+```{r}
+
+# Load dataset
+data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>% 
+  janitor::clean_names()
+
+```
+
+## 2. Numeric Variables
+```{r}
+
+
+```
+
+### 2.2 Count Variables
+```{r}
+
+
+```
+
+### 2.3 Binary Variables
+```{r}
+
+
+```
+
+
+### 2.4 Proportion Variables
+```{r}
+
+
+```
+
+
+## 3. ANALYSIS
+```{r}
+
+
+```
+
+
+## 4. Considerations
+### 4.1 Important model-selection questions
+
+Before choosing a model, ask:
+
+1. What is the response variable?
+2. What type of variable is the response?
+3. Is the response approximately normal, skewed, count, binary, or proportion?
+4. Are observations independent?
+5. Are individuals sampled repeatedly?
+6. Is the dataset cross-sectional or longitudinal?
+7. What are the predictor variables?
+8. Are predictors continuous, categorical, binary, count, or proportion?
+9. Does the research question involve group differences, relationships, prediction, or repeated measures?
+
+
+# Skills Application -- Lab
+
+## 5. Lab Challenge: Choose the Model Type
+
+For this lab, your goal is **not** to run the final model yet.
+
+Your goal is to look at a biological question, identify the response variable, diagnose the structure of the data, and decide what kind of model might be appropriate.
+
+For each question below, answer:
+
+1. What is the response variable?
+2. What type of variable is the response?
+3. What are the predictor variables?
+4. Are the observations independent?
+5. Is the dataset cross-sectional or longitudinal/repeated?
+6. What plot would help you inspect the response?
+7. What general model type might be appropriate?
+
+
+### 5.1 Question 1
+
+> Do gorillas with more aggression events have higher cortisol?
+
+```{r}
+
+# Make at least one plot to inspect this question here
+
+```
+
+**Your answer:**  
+_Response variable:_  
+_Response type:_  
+_Predictor variable(s):_  
+_Independent or repeated observations?_  
+_Cross-sectional or longitudinal?_  
+_Useful plot:_  
+_Possible model type:_  
+
+
+### 5.2 Question 2
+
+> Are respiratory signs more likely in larger groups?
+
+```{r}
+
+# Make at least one plot to inspect this question here
+
+```
+
+**Your answer:**  
+_Response variable:_  
+_Response type:_  
+_Predictor variable(s):_  
+_Independent or repeated observations?_  
+_Cross-sectional or longitudinal?_  
+_Useful plot:_  
+_Possible model type:_  
+
+
+### 5.3 Question 3
+
+> Does feeding time proportion differ by group?
+
+```{r}
+
+# Make at least one plot to inspect this question here
+
+```
+
+**Your answer:**  
+_Response variable:_  
+_Response type:_  
+_Predictor variable(s):_  
+_Independent or repeated observations?_  
+_Cross-sectional or longitudinal?_  
+_Useful plot:_  
+_Possible model type:_  
+
+
+### 5.4 Optional: Your own biological question
+
+Write one biological question using this dataset or your own dataset.
+
+**Your question:**  
+
+```{r}
+
+# Make at least one plot to inspect your question here
+
+```
+
+**Your answer:**  
+_Response variable:_  
+_Response type:_  
+_Predictor variable(s):_  
+_Independent or repeated observations?_  
+_Cross-sectional or longitudinal?_  
+_Useful plot:_  
+_Possible model type:_  
+
+------------------------------------------------------------------------
+

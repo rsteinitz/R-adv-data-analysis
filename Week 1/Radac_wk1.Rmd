@@ -11,6 +11,10 @@ editor_options:
     wrap: 200
 ---
 
+```{r global_options, include=FALSE}
+options(width = 60) # Adjust page width as needed (e.g., 60-80)
+```
+
 # Skills Learning -- Lecture
 
 This week, we are shifting from basic R skills toward statistical thinking.
@@ -66,7 +70,7 @@ getwd()
 list.files("Week 1")
 
 # Load dataset
-data <- readr::read_csv(here::here("Week 1/gorilla_hormone_behavior_data.csv")) %>% 
+data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>% 
   janitor::clean_names()
 
 # Preview the structure
@@ -113,7 +117,6 @@ summary(data$parasite_load)
 
 # Check class
 class(data$cortisol_ng_ml) # this is a numeric variable
-class(data$testosterone_ng_ml) # numeric
 class(data$age_years) # numeric
 
 # ================================================================================
@@ -125,6 +128,7 @@ ggplot(data, aes(x = cortisol_ng_ml)) +
   geom_histogram() + 
   geom_vline(aes(xintercept = mean(data$cortisol_ng_ml)), 
              color = "red",
+             size = 1, 
              linetype = "dashed")
 
 ```
@@ -149,27 +153,36 @@ Examples in this dataset include:
 ```{r}
 
 summary(data$aggression_events)
-class(data$aggression_events) # class is numeric, and these are continuous, but they are counts and tend to be 0-inflated
+class(data$aggression_events) 
+# class is numeric, and these are continuous, 
+# but they are counts and tend to be 0-inflated
 
 # note how the min and max are round numbers- 0 and 8
-# the mean is a number with a decimal, because a mean of counts is not necessarily a round number. For example, the mean of (1, 4, and 5) is 3.333 
+# the mean is a number with a decimal, because a mean of counts is not 
+# necessarily a round number. For example, the mean of (1, 4, and 5) is 3.333 
 
 # Count how many rows have each aggression value
 count(data, aggression_events)
-# what does this table tell you? What does each row mean?
+# What does each row mean?
 
 # ================================================================================
 # Q: Why is aggression_events a count variable rather than a continuous variable?
-# ---> Mathematically, a count variable is numeric, but it is not continuous because it cannot take every value within a range. 
+# ---> Mathematically, a count variable is numeric, but it is not continuous 
+# because it cannot take every value within a range. 
+
 # for example, cortisol can take any of the following:
 # 14.2
 # 14.21
 # 14.213
 # 14.2137
-
 # There are infinitely many possible values between 14 and 15.
-# Count variables have different statistical properties that may violate assumptions of ordinary linear models, for example.
-# because the model might predict a negative number... when that is impossible for a count variable. 
+
+# But you can't log 3.54 aggression events. Each aggression event either 
+# happens or it does not, so each event is a whole number-- 1; when you 
+# count them together, they form round numbers: 1, 2, 3... 246.. and so on.
+
+# Count variables have different statistical properties that may violate 
+# assumptions of ordinary linear models, for example.
 # ================================================================================
 
 # ================================================================================
@@ -183,6 +196,17 @@ ggplot(data, aes(x = aggression_events)) +
 # ================================================================================
 # Q: Why does the distribution have breaks between columns?
 # ================================================================================
+
+# Another cool option: 
+# manually calculate the height of each bar of the histogram...
+hist_data <- data %>%
+  count(aggression_events)
+
+# then use that number as the max to show a line connecting the bars
+ggplot(hist_data, aes(x = aggression_events, y = n)) +
+  geom_col() +
+  geom_line(color = "red") +
+  geom_point(color = "red")
 
 ```
 
@@ -217,6 +241,9 @@ data %>%
 # ================================================================================
 
 ggplot(data, aes(respiratory_signs)) + 
+  geom_histogram() 
+
+ggplot(data, aes(respiratory_signs)) + 
   geom_histogram() + 
    geom_vline(aes(xintercept = mean(data$respiratory_signs)), 
              color = "red",
@@ -224,7 +251,7 @@ ggplot(data, aes(respiratory_signs)) +
 
 # ================================================================================
 # Q: Why does the distribution have breaks between columns?
-# Q: Why is the mean not exactly in between the two columns? 
+# Q: Why is the mean not exactly in the middle between the two columns? 
 # ================================================================================
 
 # Proportion of samples with respiratory signs
@@ -279,9 +306,10 @@ ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml)) +
   geom_smooth(method = "lm")
 
 # so we can write a model to test this
-mod1 <- lm(data = data, cortisol_ng_ml~aggression_events)
+mod1 <- lm(cortisol_ng_ml~aggression_events, data = data)
 summary(mod1)
-# --> For every additional aggression event, cortisol increases by about 2.15 ng/mL {the `estimate` of `aggression_events`}
+# --> For every additional aggression event, cortisol increases by 
+# about 2.15 ng/mL {the `estimate` of `aggression_events`}
 
 # ==============================================
 
@@ -289,50 +317,71 @@ summary(mod1)
 # **Does aggression predict cortisol after accounting for injury status?**
 
 # here, we include a **CONTROL VARIABLE** injury status:
-mod2 <- lm(data = data, cortisol_ng_ml~aggression_events + injury_status)
+mod2 <- lm(cortisol_ng_ml~aggression_events + injury_status, data = data)
 summary(mod2)
 
-# the coefficient of `aggression events` changed: 
-# 2.15  -->  1.86
-# This tells us that some of the relationship between aggression and cortisol was actually shared with injury status.
+# cortisol = 18.40 + (1.86 × aggression_events) + (6.43 × injury_status)
 
-# In other words: more aggressive individuals may be somewhat more likely to be injured injured individuals have higher cortisol
+```
 
-# So when injury enters the model, aggression itself loses a little explanatory power. 
-# but p = 1.0e-11, so **aggression** remains strongly significant
+This means: Holding injury status constant, each additional aggression event is associated with an increase of about 1.86 ng/mL cortisol.  
 
-# Now, the coefficient of injury_status = 6.43
-# and since injury_status is either 0 or 1, then injured gorillas have cortisol values that are, on average, about 6.4 ng/mL higher than non-injured gorillas, after accounting for aggression, which is a pretty substantial effect.
+the coefficient of `aggression events` changed:  
+`2.15`  -->  `1.86`  
+This tells us that some of the relationship between aggression and cortisol was actually shared with injury status.  
 
-# but this doesn't necessarily mean that injury is a better predictor.
-# because the predictors (aggression vs. injury) are measured on entirely different scales. 
-# --> 1 unit of aggression means "+1 aggression event". 
-# --> 1 unit of injur means going from uninjured to injured.
+In other words: 
+> more aggressive individuals may be somewhat more likely to be injured; and injured individuals have higher cortisol  
 
-# ==============================================
+- uninjured gorilla → add 0 x 6.43 = 0  
+- injured gorilla → add 1 x 6.43 = 6.43  
+So, after accounting for aggression, injured gorillas have cortisol values that are approximately 6.43 ng/mL higher than uninjured gorillas.  
 
-# So, what /CAN/ we say?? 
-# "Injury status contributes important additional information beyond aggression."
-# R^2 increased: 0.228 --> 0.275, so the model now explains 27.5% instead of 22.8% of the variation we see. 
+----
 
-# ==============================================
+So when injury enters the model, aggression itself loses a little explanatory power ...but `p = 1.0e-11`, so **aggression** remains strongly significant.  
 
-# In Model 1, aggression predicts cortisol.
-# In Model 2, aggression still predicts cortisol, even after accounting for injury status. Injury status also predicts cortisol, even after accounting for aggression.
+Now, the coefficient of injury_status = `6.43`  
+...and since injury_status is either 0 or 1, then injured gorillas have cortisol values that are, on average, about 6.4 ng/mL higher than non-injured gorillas, after accounting for aggression, which is a pretty substantial effect.  
 
-# ==============================================
-### That is the essence of multiple regression.
-# ==============================================
+But this doesn't necessarily mean that injury is a better predictor. Because the predictors (aggression vs. injury) are measured on entirely different scales.
 
+ - 1 unit of aggression means *+1 aggression event*.  
+ - 1 unit of injury means going from *uninjured* to *injured* (all or none- 0 or 100%).  
+
+--- 
+
+So, what *CAN* we say??  
+
+> "Injury status contributes important additional information beyond aggression."
+
+R^2 increased: 0.228 --> 0.275, so the model now explains 27.5% instead of 22.8% of the variation we see.
+
+--- 
+
+- In **Model 1**, `aggression` predicts `cortisol`.
+- In **Model 2**, `aggression` *still* predicts `cortisol`, even after accounting for `injury status`.  
+`Injury status` also predicts `cortisol`, even after accounting for `aggression`.
+
+> The coefficient for each predictor tells us its relationship with the outcome after accounting for all of the other predictors in the model.  
+
+**That is the essence of multiple regression.**
+
+
+```{r}
 
 # and we can plot this as well, where this relationship becomes more apparent: 
 ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml, group = injury_status)) +
   geom_point() +
-  geom_smooth(method = "lm", aes(color = as.factor(injury_status)))
+  geom_smooth(method = "lm", aes(color = injury_status))
 
 # if we used: `aes(color = injury_status)`, without "as.factor", 
 # ggplot assumes `injury_status` is a continuous variable.
 # which makes sense for something like `body_mass` or `age`. 
+
+ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml, group = injury_status)) +
+  geom_point() +
+  geom_smooth(method = "lm", aes(color = as.factor(injury_status)))
 
 # but `injury_status` is not-- it can either be 0 or 1. 
 # so we're telling ggplot: Don't treat these as numbers. Treat them as categories.
