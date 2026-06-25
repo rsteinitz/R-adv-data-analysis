@@ -1,0 +1,774 @@
+---
+title: 'Week 2: Comparing Groups'
+author: "Ronnie Steinitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+  markdown:
+    wrap: 200
+---
+
+```{r global_options, include=FALSE}
+options(width = 60)
+```
+
+# Skills Learning -- Lecture
+
+Last week, we focused on identifying different types of variables and thinking about how the structure of our data affects the type of analysis we can use.
+
+This week, we will focus on one major branch of the statistical decision tree:
+
+> **Comparing groups when the response variable is quantitative.**
+
+Today we will focus on:
+
+- one-sample t-tests
+- independent two-sample t-tests
+- paired t-tests
+- ANOVA
+- nonparametric alternatives
+- visualizing group comparisons
+- interpreting results biologically
+
+The main question for today is:
+
+> **I have a quantitative response variable and I want to compare groups. Which test should I use?**
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(here)
+```
+
+## 1. Load and Preview the Dataset
+
+Today we will continue using the faux gorilla hormone + behavioral dataset.
+
+Each row represents one sample or observation from a gorilla. Some gorillas appear more than once, which means the dataset contains repeated measures. Later in the course, we will learn how to model repeated measures directly. Today, we will focus on the logic of comparing groups.
+
+```{r}
+
+# load dataset
+data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>% 
+  janitor::clean_names()
+
+# preview dataset
+glimpse(data, width = 80)
+
+```
+
+## 2. What Does "Comparing Groups" Mean?
+
+A group comparison asks whether a quantitative response variable differs across categories.
+
+For example:
+
+- Do injured and uninjured gorillas differ in cortisol?
+- Do males and females differ in testosterone?
+- Do adults, subadults, and juveniles differ in cortisol?
+
+The **response variable** is the numeric variable we are comparing.
+
+The **grouping variable** is the categorical variable that defines the groups.
+
+```{r}
+# Examples of quantitative response variables
+summary(data$cortisol_ng_ml)
+summary(data$testosterone_ng_ml)
+
+# Examples of grouping variables
+data %>% count(injury_status)
+data %>% count(sex)
+data %>% count(age_class)
+```
+
+## 3. One-Sample t-test
+
+A one-sample t-test compares the mean of one group to a known or expected value.
+
+Example question:
+
+> Is the average cortisol value different from 20 ng/mL?
+
+Here, we only have one sample of cortisol values, and we are comparing the mean to a known value: 20.
+
+*Why are we comparing it to 20 ng/mL?*  
+For a real biological interpretation, the comparison value would need to come from somewhere meaningful, such as:
+
+- a published population average
+- a known physiological threshold
+- a historical baseline from the same population
+- a management or conservation benchmark
+
+For example, if previous research found that healthy adult mountain gorillas have an average cortisol concentration of 20 ng/mL; then we want to test whether our population is different than that observed mean. 
+
+```{r}
+# One-sample t-test
+t.test(data$cortisol_ng_ml, mu = 20)
+```
+
+This test asks:
+
+> Is the mean cortisol value in our sample statistically different from 20 ng/mL?
+
+Important pieces of output:
+
+- **mean of x**: the observed sample mean
+- **confidence interval**: plausible range for the true mean
+- **p-value**: evidence against the idea that the true mean equals 20  
+
+The `mean` cortisol value in our dataset is: **18.05 ng/mL**, which is lower than **20 ng/mL**.  
+
+The test then asks: *Is this difference large enough that it is unlikely to be due to random sampling variation alone?*  
+
+The `p-val` = **0.00016**, which is << 0.05.  
+This suggests that the mean cortisol level in our sample is likely different from 20 ng/mL.  
+
+The `confidence interval` is: **17.05 to 19.05 ng/mL**, which is our best estimate of where the true population mean probably lies.  
+Notice that 20 ng/mL is *not* inside this interval. That is another clue that the true mean is probably different from 20 ng/mL.  
+
+> Biological interpretation: The average cortisol concentration in our sample was approximately 18.1 ng/mL. This was significantly lower than the reference value of 20 ng/mL (one-sample t-test, p < 0.001). The estimated population mean cortisol concentration is likely between 17.0 and 19.1 ng/mL.  
+
+The most important question is not "Is the p-value significant?" The most important question is: What is the estimated mean, and how different is it from the value we are comparing it to?  
+
+We can then say: *The gorillas in our sample had a mean cortisol concentration of 18.1 ng/mL, which was significantly lower than the published reference value of 20 ng/mL (p < 0.001).*
+
+or  
+
+*The average cortisol concentration in our sample was significantly below this threshold, suggesting that the population was not experiencing unusually elevated stress during the sampling period.*
+
+
+## 4. Visualizing Group Comparisons
+
+Before running any statistical test, we should always visualize the data.
+
+Common plots for comparing groups include:
+
+- boxplots
+- jitter plots
+
+### 4.1 Boxplot
+
+```{r}
+ggplot(data, aes(x = injury_status, y = cortisol_ng_ml, group = injury_status)) +
+  geom_boxplot() +
+  labs(
+    x = "Injury status",
+    y = "Cortisol (ng/mL)",
+    title = "Cortisol by injury status"
+  )
+
+# Make injury labels easier to read
+data <- data %>%
+  mutate(
+    injury_label = if_else(injury_status == 1, "Injured", "Not injured")
+  )
+
+ggplot(data, aes(x = injury_label, y = cortisol_ng_ml)) +
+  geom_boxplot(outlier.colour = "red") +
+  labs(
+    x = "Injury status",
+    y = "Cortisol (ng/mL)",
+    title = "Cortisol by injury status"
+  )
+
+```
+
+## 5. Independent Two-Sample t-test
+
+An independent two-sample t-test compares the mean of a quantitative variable between two independent groups.
+
+Example question:
+
+> Do injured gorillas have higher cortisol than uninjured gorillas?
+
+Response variable:
+
+- `cortisol_ng_ml`
+
+Grouping variable:
+
+- `injury_label`
+
+Number of groups:
+
+- 2
+
+Design:
+
+- independent groups
+
+### 5.1 Independent t-test
+```{r}
+# Independent two-sample t-test
+t.test(cortisol_ng_ml ~ injury_label, data = data)
+```
+
+This test asks:
+
+> Is the average cortisol level different between injured and uninjured gorillas?
+
+The p-value tells us whether the difference between group means is larger than we would expect from random variation alone.
+
+The confidence interval gives a plausible range for the difference between group means.
+
+
+Look at the group means:
+
+- Mean cortisol (Injured)      = 27.03 ng/mL
+- Mean cortisol (Not injured)  = 17.23 ng/mL
+
+Before even looking at the p-value: *injured gorillas* appear to have **higher cortisol** levels than *uninjured gorillas*. The difference is: 27.03 - 17.23 = **9.80 ng/mL**
+
+> So injured gorillas have, on average, about 10 ng/mL higher cortisol.
+
+The t-test asks: *is this difference large enough that it is unlikely to be due to random sampling variation alone?*
+
+- p-value: We see that **p << 0.05**, so, there is strong evidence that cortisol differs between injured and uninjured gorillas.
+- 95% confidence interval: **4.55 - 15.06**. So, We estimate that injured gorillas have cortisol values somewhere between 4.5 and 15.1 ng/mL. 
+- notice that '0' is not inside the CI; so, this is a clue that the groups differ. If 0 was within the CI, then statistically, there was a possibility that the difference between the groups was zero! 
+
+We can say that *injured gorillas have significantly higher cortisol concentrations than uninjured gorillas (Welch's two-sample t-test, p < 0.001). On average, injured gorillas have cortisol concentrations approximately 9.8 ng/mL higher than uninjured gorillas. The estimated difference between groups is between 4.5 and 15.1 ng/mL.*
+
+Important to note: **Does this mean injury causes elevated cortisol?**  
+*Not necessarily!*
+
+Possible explanations: 
+
+- injury increases physiological *stress*, which elevates cortisol
+- individuals with higher cortisol may be more likely to become injured
+- another factor may influence *both* injury risk and cortisol
+
+> Remember: association is not the same thing as causation.
+
+### 5.2 Plots
+
+```{r}
+
+# can also be a boxplot
+ggplot(data, aes(x = injury_label, y = cortisol_ng_ml)) +
+  geom_jitter(alpha = 0.5, width = 0.2, aes(color = sex)) +
+  geom_boxplot(alpha = 0.2, aes(fill = sex)) +
+  facet_wrap(~sex) +
+  labs(
+    x = "Injury status",
+    y = "Cortisol (ng/mL)",
+    title = "Distribution of cortisol by injury status"
+  )
+
+# you can also change the perspective by faceting by injury status instead of sex. 
+ggplot(data, aes(x = sex, y = cortisol_ng_ml)) +
+  geom_jitter(alpha = 0.5, width = 0.2, aes(color = sex)) +
+  geom_boxplot(alpha = 0.2, aes(fill = sex)) +
+  facet_wrap(~injury_label) +
+  labs(
+    x = "Injury status",
+    y = "Cortisol (ng/mL)",
+    title = "Distribution of cortisol by injury status"
+  )
+
+```
+
+
+
+
+## 6. Paired t-test
+
+A paired t-test is used when each observation in one group has a natural partner in the other group.
+
+For example:
+
+> What if we measured cortisol in the same gorillas before and after an injury?
+
+In that case, each gorilla has two measurements:
+
+- before injury
+- after injury
+
+Those values are paired because they come from the same individual.
+
+### 6.1 Import paired data
+
+```{r}
+
+paired_data <- read_csv(here::here("Week 2/gorilla_paired.csv")) %>% 
+  janitor::clean_names()
+
+```
+
+### 6.2 Run t-test
+```{r}
+# Paired t-test
+t.test(
+  paired_data$after_injury,
+  paired_data$before_injury,
+  paired = TRUE
+)
+```
+
+### Key idea
+
+Ask yourself:
+
+> Can I draw a line connecting one value to another because they belong to the same individual?
+
+- If yes, the data may be paired.
+- If no, the groups are probably independent.
+
+Our question is: *Do cortisol levels change after an injury?* Importantly, we are **not** comparing two different groups of gorillas. We're comparing the same individuals before and after an event. 
+
+**The paired t-test therefore focuses on the difference within each individual.**
+
+> Mean difference = 5.2
+
+Biological interpretation: *on average, cortisol increased by about 5.2 ng/mL after injury.*
+
+Notice that the test is not reporting the mean before or the mean after. Instead, it calculates: (after - before) for each gorilla and then analyzes those differences.
+
+- p-value: **<< 0.05**, so we can say that *cortisol levels appear to increase after injury.*  
+- 95% confidence interval: **4.44 to 5.96**, so the true average increase in cortisol is likely somewhere between: 4.44 and 5.96 ng/mL.  
+- notice that '0' is not inside the CI; so, this is a clue that cortisol appears to change with injury. If injury had no effect, we would expect the mean difference to be close to zero.  
+
+To summarize: *Cortisol concentrations were significantly higher after injury than before injury (paired t-test, p < 0.001). On average, cortisol increased by approximately 5.2 ng/mL following injury. The estimated increase was between 4.44 and 5.96 ng/mL.*
+
+### 6.3 Plot
+```{r}
+# Reshape for plotting
+paired_long <- paired_data %>%
+  pivot_longer(
+    cols = c(before_injury, after_injury),
+    names_to = "timepoint",
+    values_to = "cortisol"
+  )
+
+paired_long
+
+# plot as paired data on x-axis
+ggplot(paired_long, aes(x = timepoint, y = cortisol, group = gorilla_id, color = gorilla_id)) +
+  geom_point() +
+  geom_line() +
+  labs(
+    x = "Timepoint",
+    y = "Cortisol",
+    title = "Cortisol values before and after injury",
+    color = "Gorilla ID"
+  ) + 
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# but we see that the order of the labels on the x-axis isn't correct, 
+#chronologically (we usually read left-to-right)...
+
+# so, let's change that: We'll change `timepoint` (the x variable) to a 
+# factor with a particular order:
+
+# Before, `timepoint` was a character. A character variable is simply text. 
+# R treats each value as a word or label. No particular meaning or order.
+
+# A factor variable is a categorical variable. It still looks like text 
+# to us, but now R knows that the values represent categories that can be compared.
+
+paired_long <- paired_long %>% 
+  mutate(timepoint = factor(timepoint, levels = c("before_injury", "after_injury")))
+
+# now let's plot again
+ggplot(paired_long, aes(x = timepoint, y = cortisol, group = gorilla_id, color = gorilla_id)) +
+  geom_point() +
+  geom_line() +
+  labs(
+    x = "Timepoint",
+    y = "Cortisol",
+    title = "Cortisol values before and after injury",
+    color = "Gorilla ID"
+  ) + 
+  scale_x_discrete(labels = c("Before", "After")) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+```
+
+## 7. ANOVA: Comparing 3 or More Groups
+
+ANOVA is used when we want to compare the mean of a quantitative response variable across three or more groups.
+
+Example question:
+
+> Do cortisol levels differ among age classes?
+
+Response variable:
+
+- `cortisol_ng_ml`
+
+Grouping variable:
+
+- `age_class`
+
+Number of groups:
+
+- 3 or more
+### 7.1 Plot
+```{r}
+data %>%
+  count(age_class)
+
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot()
+
+data <- data %>% 
+  mutate(age_class = factor(age_class, levels = c("infant", "subadult", "adult")))
+
+# yes, we can look at boxplots: the *distribution* of the data
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot()
+
+# but a better, statistical representation of the means (which we are comparing), is a stat_summary: 
+ggplot(data, aes(age_class, parasite_load)) +
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 2
+               ) +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = 0.2
+               ) +
+  labs(
+    x = "Age class",
+    y = "Parasite Load",
+  ) +
+  theme_bw()
+
+```
+
+Boxplots: 
+Maximum (within 1.5 x IQR)  
+        |  
+        |  
+   Q3 ---  <- top of box (75th percentile)  
+        |  
+ Median -  <- middle line (50th percentile)  
+        |  
+   Q1 ---  <- bottom of box (25th percentile)  
+        |  
+        |  
+Minimum (within 1.5 x IQR)  
+
+Whereas `geom_boxplot()` shows distribution, `stat_summary(fun = mean)` ignores quartiles and just looks at the actual average + error (uncertainty due to variation in the data). 
+
+- Boxplot: *"What do the data look like?"*
+- Mean +/- CI: *"How precisely have we estimated the population mean?"*
+
+### 7.2 ANOVA
+```{r}
+# Fit ANOVA model
+mod_aov <- aov(parasite_load ~ age_class, data = data)
+
+# View ANOVA table
+summary(mod_aov)
+```
+
+ANOVA asks:
+
+> Are any of the group means different from each other?
+
+ANOVA does not compare every pair of groups individually. It only asks: *looking at all three groups together, is there evidence that at least one mean differs from the others?*
+
+It does **not** tell us *which* groups are different. For that, we need a follow-up comparison. It first asks whether there is evidence of any difference among the means.
+
+- p-values: **Pr(>F) = 0.003**. This is *much* smaller than 0.05, so we have strong evidence that parasite load differs among age classes.
+
+However, ANOVA does not tell us *which* age classes differ. It only tells us that **at least one difference exists** somewhere among the groups.
+
+To determine which specific groups differ, we need a post-hoc test:
+
+It asks: *if the ANOVA found differences among the groups, which specific groups differ?* 
+
+So Tukey performs all pairwise comparisons:
+
+- Infant vs Adult
+- Subadult vs Adult
+- Subadult vs Infant
+
+...while correcting for the fact that we are making multiple comparisons. Without that correction, we'd increase our chance of false positives.
+
+Because Tukey performs multiple statistical tests, it adjusts the p-values to reduce the chance of finding a significant result simply by chance.
+
+Think of it this way:
+
+- If we perform one statistical test, there is about a 5% chance of finding a significant result by chance alone (when using a = 0.05).
+- If we perform many tests, those chances begin to add up. The more comparisons we make, the greater the chance of getting a false positive.
+
+Tukey corrects for this by adjusting the p-values so that the *overall* probability of making even one false positive across *all* pairwise comparisons remains close to 5%.
+
+Instead of treating each comparison independently, **Tukey treats them as one family of comparisons**, which is why the output states: 95% *family-wise* confidence level
+
+### 7.3 Tukey 
+HSD = Honestly Significant Difference
+```{r}
+# Pairwise comparisons after ANOVA
+TukeyHSD(mod_aov)
+```
+
+
+- The `diff` column gives the estimated difference between the two group means.
+- The `lwr` and `upr` columns give the 95% confidence interval for that difference.
+- The `p adj` column contains the *adjusted* p-value, which accounts for the fact that multiple pairwise comparisons are being made.
+
+**Infant vs. Adult**
+
+- Difference = 3.38 parasites
+- Adjusted p = 0.785
+
+There is no evidence that parasite loads differ between adults and infants.
+
+**Subadult vs. Adult**
+
+- Difference = 12.50 parasites
+- Adjusted p = 0.002
+
+Subadults had, on average, about 12.5 more parasites than adults, and this difference was statistically significant.
+
+Notice that the 95% confidence interval (3.87 to 21.14) does *not* include zero, providing further evidence that the groups differ.
+
+**Subadult vs. Infant**
+
+- Difference = 9.13 parasites
+- Adjusted p = 0.297
+
+Although subadults had a higher average parasite load than infants, the difference was not statistically significant.
+
+Overall interpretation: 
+
+1. The ANOVA showed that parasite load differed among age classes (p = 0.003).
+2. The Tukey HSD test showed that this overall difference was driven by subadults having significantly higher parasite loads than adults. 
+3. No significant differences were detected between adults and infants or between subadults and infants after correcting for multiple comparisons.
+
+> You should only run a Tukey test if you first have a reason to ask which groups differ; i.e., if the ANOVA came back significant. 
+
+
+## 8. Checking Assumptions
+
+For t-tests and ANOVA, we often want to know whether the response variable is approximately normally distributed within groups.
+
+We also want to know whether the spread of the data is reasonably similar across groups.
+
+Today, we will keep this simple.
+
+### 8.1 Histograms
+
+```{r}
+ggplot(data, aes(x = cortisol_ng_ml)) +
+  geom_histogram()
+
+ggplot(data, aes(x = cortisol_ng_ml)) +
+  geom_histogram() +
+  facet_wrap(~ injury_label) 
+
+```
+
+### 8.2 QQ Plot
+
+A QQ plot helps us check whether the data are approximately normal. It compares:
+
+- what our data look like
+- what perfectly normal data would look like
+
+If the data were perfectly normal, the points would fall roughly along the straight line.
+
+```{r}
+qqnorm(data$cortisol_ng_ml)
+qqline(data$cortisol_ng_ml)
+```
+
+QQ plot: What we see is that the points follow the line fairly well in the middle
+curve upward at the upper end and have one large point at the very top
+
+This tells us: *The data are approximately normal through the middle of the distribution, but have a heavier upper tail (some unusually large values).*
+
+We can see these unusually large values in the histogram! The data are not perfectly normal, but they are *reasonably close*. There are a few unusually high observations that pull the upper tail away from the line.
+
+
+### 8.3 Model Diagnostic Plots
+
+```{r}
+
+mod_aov2 <- aov(cortisol_ng_ml ~ age_class, data = data)
+
+# Diagnostic plots for ANOVA model
+plot(mod_aov2)
+
+plot(mod_aov2, which = 4)
+
+cd <- cooks.distance(mod_aov2)
+
+sort(cd, decreasing = TRUE)
+
+which(cd > 4 / length(cd))
+data[which(cd > 4 / nrow(data)), ]
+
+data_cook <- data %>%
+  mutate(cooks_d = cooks.distance(mod_aov2)) %>%
+  arrange(desc(cooks_d))
+
+# to print them all at once: 
+# par(mfrow = c(2, 2), oma = c(0, 0, 2, 0)) 
+# plot(mod_aov2, which = 1:4)
+```
+
+**Residuals vs Fitted**: This is the most important diagnostic plot.  
+Ask: is there any obvious pattern?
+
+Ideally we want:
+
+- random cloud
+- no curve
+- roughly equal spread
+
+What do we see?
+
+The residuals appear scattered around zero without a strong trend. That's good!
+
+The vertical "stripes" that we see occur because ANOVA predicts one mean for each group, so all observations within a group share the same fitted value. That's exactly what we expect in an ANOVA.
+
+This plot doesn't suggest any obvious problems with the model.
+
+The other two plots are less important right now. 
+
+1. Scale-location: is variability similar across groups. Ideally, there a similar spread and a roughly horizontal line. Our plot is acceptable. 
+2. Cook's distance: identifies observations that have an unudsually large influence on the fitted model. 
+
+We have a few that stand out in Cook's distance (e.g., observation 223). It doesn't mean they're wrong, just that if we removed these observations, the model might change more than if we removed most other observations. They deserve a closer look.
+
+A large Cook's distance is a reason to investigate, not to delete. For example, we might ask:
+
+- Was there a data entry error?
+- Was the measurement recorded correctly?
+- Is this biologically plausible?
+- Is it simply an unusually high parasite load?
+
+If the observation is real, it usually stays in the analysis.
+
+
+## 9. Nonparametric Alternatives
+
+Sometimes, the assumptions of a t-test or ANOVA are not reasonable.
+
+For example:
+
+- the response variable is strongly skewed
+- there are extreme outliers
+- the data do not look approximately normal
+
+In those cases, we may use nonparametric alternatives.
+
+### 9.1 Wilcoxon Test
+
+The Wilcoxon test is a common alternative to a two-sample t-test.
+
+```{r}
+wilcox.test(cortisol_ng_ml ~ injury_label, data = data)
+```
+
+### 9.2 Kruskal-Wallis Test
+
+The Kruskal-Wallis test is a common alternative to ANOVA for comparing three or more groups.
+
+```{r}
+kruskal.test(cortisol_ng_ml ~ age_class, data = data)
+```
+
+### Important note
+
+Nonparametric tests are not automatically "better." They answer a slightly different question and are usually used when the assumptions of a standard test are not reasonable.
+
+For this course, the most important thing is to understand the decision process.
+
+## 10. Summary: Choosing the Right Group Comparison
+
+When comparing groups with a quantitative response variable, ask:
+
+1. What is the response variable?
+2. Is the response variable quantitative?
+3. What is the grouping variable?
+4. How many groups are there?
+5. Are the groups independent or paired?
+6. Do the data look approximately normal?
+7. Which test matches the question and data structure?
+
+A simplified guide:
+
+| Question structure | Common test |
+|---|---|
+| One group vs. known value | One-sample t-test |
+| Two independent groups | Independent two-sample t-test |
+| Same individuals measured twice | Paired t-test |
+| Three or more groups | ANOVA |
+| Two groups, non-normal data | Wilcoxon test |
+| Three or more groups, non-normal data | Kruskal-Wallis test |
+
+# Skills Application -- Lab
+
+## 11. Lab Challenge: Compare Groups in Your Own Dataset
+
+For this lab, you will work with your own dataset.
+
+Your goal is to choose a quantitative response variable and compare it across groups.
+
+You do not need to run every test. Focus on choosing the correct test for your question.
+
+### Task List
+
+1. Open your ongoing R Markdown file: `Lastname_Firstname_Data.Rmd`
+2. Load your dataset and continue working in your script.
+3. Choose one quantitative response variable.
+4. Choose one grouping variable.
+5. Count how many groups are in your grouping variable.
+6. Create at least one plot comparing the response variable across groups.
+   - boxplot
+   - violin plot
+   - jitter plot
+7. Decide which test is most appropriate.
+8. Run the test if appropriate.
+9. Write 2-3 sentences interpreting the result biologically.
+
+## 12. Template for Your Answer
+
+**Biological question:**  
+
+**Response variable:**  
+
+**Response variable type:**  
+
+**Grouping variable:**  
+
+**Number of groups:**  
+
+**Independent or paired observations?**  
+
+**Plot used:**  
+
+**Chosen test:**  
+
+**Why this test?**  
+
+**Biological interpretation:**  
+
+```{r}
+# Load your data here
+```
+
+```{r}
+# Inspect your variables here
+```
+
+```{r}
+# Create your plot here
+```
+
+```{r}
+# Run your test here, if appropriate
+```

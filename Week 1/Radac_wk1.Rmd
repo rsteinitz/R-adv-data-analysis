@@ -208,6 +208,14 @@ ggplot(hist_data, aes(x = aggression_events, y = n)) +
   geom_line(color = "red") +
   geom_point(color = "red")
 
+# Count data (non-negative integers representing occurrences) 
+# cannot be analyzed with standard linear regression because 
+# counts are bounded by zero and have other non-normal assumptions.
+
+# Instead, generalized linear models (GLMs) are used. 
+# --> We will start on those next week. 
+
+
 ```
 
 ### 2.3 Binary Variables

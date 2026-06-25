@@ -37,23 +37,64 @@ library(here)
 data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>% 
   janitor::clean_names()
 
+glimpse(data)
+
 ```
 
 ## 2. Numeric Variables
 ```{r}
 
+summary(data$cortisol_ng_ml)
+summary(data$sex)
+summary(data$parasite_load)
+
+class(data$cortisol_ng_ml)
+class(data$parasite_load)
+
+mean_cort <- mean(data$cortisol_ng_ml)
+
+ggplot(data, aes(x = cortisol_ng_ml)) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = mean_cort),
+             color = "red",
+             size = 1,
+             linetype = "dashed"
+             )
+# "dashed", "dotted", "solid", ...
 
 ```
 
 ### 2.2 Count Variables
 ```{r}
 
+summary(data$aggression_events)
+
+ggplot(data, aes(x = aggression_events)) +
+  geom_histogram()
 
 ```
 
 ### 2.3 Binary Variables
 ```{r}
 
+class(data$respiratory_signs)
+summary(data$respiratory_signs)
+
+data %>% 
+  count(respiratory_signs)
+
+mean(data$respiratory_signs)
+
+data %>% 
+  count(injury_status)
+
+prop_injured <- 20/240
+prop_injured
+
+mean(data$injury_status)
+
+ggplot(data, aes(x = respiratory_signs)) +
+  geom_histogram()
 
 ```
 
@@ -61,6 +102,11 @@ data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>%
 ### 2.4 Proportion Variables
 ```{r}
 
+class(data$feeding_time_prop)
+summary(data$feeding_time_prop)
+
+ggplot(data, aes(x = feeding_time_prop)) +
+  geom_histogram()
 
 ```
 
@@ -68,6 +114,21 @@ data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>%
 ## 3. ANALYSIS
 ```{r}
 
+ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+mod1 <- lm(data = data, cortisol_ng_ml ~ aggression_events)
+summary(mod1)
+
+
+mod2 <- lm(data = data, cortisol_ng_ml ~ aggression_events + injury_status)
+
+summary(mod2)
+
+ggplot(data, aes(x = aggression_events, y = cortisol_ng_ml, group = injury_status)) +
+  geom_point(aes(color = as.factor(injury_status))) +
+  geom_smooth(method = "lm", aes(color = as.factor(injury_status)))
 
 ```
 
