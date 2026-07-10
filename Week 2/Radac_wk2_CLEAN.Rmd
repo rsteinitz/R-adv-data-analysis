@@ -63,7 +63,14 @@ A group comparison asks whether a quantitative response variable differs across 
 
 ### 2.1 summary stats
 ```{r}
+summary(data$cortisol_ng_ml)
 
+summary(data$injury_status)
+data %>% 
+  count(injury_status)
+
+data %>% 
+  count(sex)
 
 ```
 
@@ -73,7 +80,8 @@ A one-sample t-test compares the mean of one group to a known or expected value.
 
 ### 3.1 Test
 ```{r}
-
+# cortisol of our population differs from a KNOWN value of 21.345 ng/mL, measured 10 years ago in Western LL gorillas. 
+t.test(data$cortisol_ng_ml, mu = 21.345)
 
 ```
 
@@ -84,6 +92,17 @@ A one-sample t-test compares the mean of one group to a known or expected value.
 
 ```{r}
 
+ggplot(data, aes(x = injury_status, y = cortisol_ng_ml, group = injury_status)) +
+  geom_boxplot()
+
+data <- data %>%
+  mutate(injury_label = if_else(injury_status == 1, "Injured", "Not Injured"))
+
+data$new_column <- if_else(data$sex == "M", "Male", "Female")
+
+ggplot(data, aes(x = as.factor(injury_status), y = cortisol_ng_ml)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Not Injured", "Injured"))
 
 ```
 
@@ -95,6 +114,7 @@ An independent two-sample t-test compares the mean of a quantitative variable be
 ### 5.1 Independent t-test
 ```{r}
 
+t.test(cortisol_ng_ml ~ injury_label, data = data)
 
 ```
 
@@ -102,6 +122,16 @@ An independent two-sample t-test compares the mean of a quantitative variable be
 ### 5.2 Plots
 
 ```{r}
+
+ggplot(data, aes(x = injury_label, y = cortisol_ng_ml)) +
+  geom_jitter(alpha = 0.2, width = 0.1, color = "cyan4") +
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 2) +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               width = 0.2)
+  
 
 
 ```
@@ -125,12 +155,40 @@ paired_data <- read_csv(here::here("Week 2/gorilla_paired.csv")) %>%
 ### 6.2 Run t-test
 ```{r}
 
+t.test(
+       paired_data$before_injury,
+       paired_data$after_injury, 
+       paired = TRUE)
 
 ```
 
 ### 6.3 Plot
 ```{r}
 
+paired_long <- paired_data %>% 
+  pivot_longer(cols = c(before_injury, after_injury),
+               names_to = "timepoint",
+               values_to = "cortisol")
+
+group_mean <- paired_long %>% 
+  group_by(timepoint) %>% 
+  summarize(
+    mean = mean(cortisol)
+  )
+
+ggplot(paired_long, aes(x = timepoint, y = cortisol, group = gorilla_id, color = gorilla_id)) +
+  geom_point() +
+  geom_line() 
+
+paired_long <- paired_long %>% 
+  mutate(timepoint = factor(timepoint, levels = c("before_injury", "after_injury")))
+
+ggplot(paired_long, aes(x = timepoint, y = cortisol, group = gorilla_id, color = gorilla_id)) +
+  geom_point() +
+  geom_line() +
+  scale_x_discrete(labels = c("Before", "After")) +
+  labs(x = "Timepoint") +
+  theme(legend.position = "bottom")
 
 ```
 
@@ -141,13 +199,60 @@ ANOVA is used when we want to compare the mean of a quantitative response variab
 
 ### 7.1 Plot
 ```{r}
+unique(data$age_class)
 
+data %>% 
+  count(age_class)
+
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot()
+
+data <- data %>% 
+  mutate(age_class = factor(age_class, levels = c("infant", "subadult", "adult")))
+
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot()
+
+ggplot(data, aes(age_class, parasite_load)) +
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 2) +
+  stat_summary(fun.data = mean_cl_normal, 
+               geom = "errorbar", 
+               width = 0.2)
+
+
+ggplot(paired_long, aes(x = timepoint, y = cortisol,
+                        group = gorilla_id, color = gorilla_id)) +
+  geom_point() +
+  geom_line() +
+  stat_summary(aes(group = 1),
+    fun = mean,
+    geom = "point",
+    size = 2,
+    color = "black"
+  ) +
+  stat_summary(aes(group = 1),
+  fun = mean,
+  geom = "line",
+  linewidth = 1.2,
+  color = "black"
+) +
+  labs(
+    x = "Timepoint",
+    y = "Cortisol",
+    color = "Gorilla ID"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
 
 ```
 
 ### 7.2 ANOVA
 ```{r}
 
+mod_aov <- aov(data = data, parasite_load ~ age_class)
+summary(mod_aov)
 
 ```
 
@@ -155,6 +260,7 @@ ANOVA is used when we want to compare the mean of a quantitative response variab
 HSD = Honestly Significant Difference
 ```{r}
 
+TukeyHSD(mod_aov)
 
 ```
 

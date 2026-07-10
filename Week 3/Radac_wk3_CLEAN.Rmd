@@ -1,0 +1,380 @@
+---
+title: "Radac_wk3"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-07-08"
+output:
+  pdf_document: default
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+# Skills Learning -- Lecture
+
+Last week, we focused on comparing groups when the response variable was quantitative and reasonably close to normal.
+
+This week, we will ask:
+
+> **What do we do when normality is not a good assumption?**
+
+This happens often in ecological and biological data. Many response variables are not normally distributed.
+
+Examples include:
+
+- count data, such as aggression events or parasite load
+- skewed data, such as hormone concentrations
+- data with many zeros
+- data that cannot be negative
+
+Today we will focus on:
+
+- recognizing when a t-test, ANOVA, or linear model may not be appropriate
+- nonparametric alternatives to t-tests and ANOVA
+- count data
+- Poisson regression
+- overdispersion
+- negative binomial regression
+- when log transformations may or may not help
+
+The main question for today is:
+
+> **What kind of analysis should I use when my response variable is not normally distributed?**
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(here)
+library(rstatix) # for Dunn post-hoc test
+```
+
+## 1. Load and Preview the Dataset
+
+Today we will continue using the faux gorilla hormone + behavioral dataset.
+
+```{r}
+# load dataset
+data <- readr::read_csv(here::here("Week 3/gorilla_hormone_data_week3.csv")) %>% 
+  janitor::clean_names()
+
+# preview dataset
+glimpse(data)
+```
+
+## 2. When Normality Is Not Appropriate
+
+Many standard tests assume that the response variable, or the model residuals, are approximately normal.
+
+This is often reasonable for continuous variables like:
+
+- body mass
+- hormone concentration
+- temperature
+- age
+
+But it is often not reasonable for variables like:
+
+- number of aggression events
+- parasite load
+- number of nests
+- number of offspring
+- number of animal sightings
+
+Count variables have special properties:
+
+- they are whole numbers
+- they cannot be negative
+- they often have many zeros
+- they are often right-skewed
+- the variance often increases as the mean increases
+
+### 2.1 Look at count data
+```{r}
+
+
+```
+
+### Key idea
+
+A model should match the type of response variable.
+
+```text
+Quantitative and approximately normal     ->  t-test, ANOVA, linear model
+Non-normal group comparison               ->  Wilcoxon or Kruskal-Wallis
+Count response                            ->  Poisson or negative binomial model
+Binary response                           ->  logistic regression
+Repeated measures                         ->  mixed effects model
+```
+
+
+
+## 3. Nonparametric Alternatives
+
+Last week, we used t-tests and ANOVA to compare group means.  
+But what if the response variable is strongly skewed, has extreme outliers, or does not look approximately normal?
+
+In those cases, we may use nonparametric tests.  
+Nonparametric tests are useful because they do not rely as strongly on the assumption that the response variable is normally distributed.
+
+Today we will use:
+
+- `wilcox.test()` as an alternative to a two-sample t-test
+- `kruskal.test()` as an alternative to ANOVA
+
+Important note:
+
+> Nonparametric tests are not automatically better. They are used when the assumptions of the parametric test are not reasonable.
+
+
+## 4. Wilcoxon Test: Alternative to a Two-Sample t-test
+
+The Wilcoxon test is often used when we want to compare two independent groups, but the response variable is not approximately normal.
+
+### 4.1 Visualize
+```{r}
+
+
+```
+
+### 4.2 Wilcoxon Test
+
+```{r}
+
+
+```
+
+### How to interpret this
+
+The Wilcoxon test asks:
+
+> Do the values in one group tend to be higher or lower than the values in the other group?
+
+This is slightly different from a t-test, which focuses on the difference between group means.
+
+For non-normal or skewed data, it is often useful to report the median as well as the mean.
+
+The Wilcoxon test doesn't compare means like a t-test does. Instead, it compares the locations of the two distributions (based on the ranks of the observations).
+
+
+### 4.3 Ranking values
+```{r}
+
+
+```
+
+The Wilcoxon test first sorts all parasite loads from the smallest to the largest and assigns each observation a rank. **If several gorillas have exactly the same parasite load, they tie**. Rather than breaking the tie arbitrarily, R gives each of them the **average of the ranks** they would have occupied
+
+
+
+## 5. Kruskal-Wallis Test: Alternative to ANOVA
+
+The Kruskal-Wallis test is often used when we want to compare three or more groups, but the response variable is not approximately normal.
+
+### 5.1 Look at data
+```{r}
+
+
+```
+
+
+### 5.2 Run the Kruskal-Wallis Test
+
+```{r}
+
+```
+
+The Kruskal-Wallis test asks:
+
+> Do parasite load values tend to differ among age classes?
+
+It does this by ranking all parasite load values from lowest to highest and then asking whether one age class tends to have consistently higher (or lower) ranks than the others.
+
+
+### 5.2 Post-hoc test
+The Kruskal-Wallis test tells us whether at least one group differs, but not which groups differ.
+
+If the Kruskal-Wallis test is significant, we can perform Dunn's test, the non-parametric equivalent of Tukey's HSD, to compare every pair of groups while adjusting for multiple comparisons.
+
+Just like Tukey adjusted the p-values after ANOVA, Dunn's test adjusts the p-values because we're making several pairwise comparisons.
+```{r}
+
+
+```
+
+
+
+## 6. Count Data
+
+Now we will move from nonparametric group comparisons to models designed specifically for count data.
+
+A **Poisson** distribution describes the pattern we often see when counting how many times something happens. A Poisson distribution has several characteristics:
+
+- The values are counts (0, 1, 2, 3, ...)
+- Negative values are impossible.
+- Smaller counts are usually more common than larger counts.
+- The distribution is often right-skewed (many small values, few large values).
+- A very important property of a Poisson distribution is that **the mean and variance are expected to be approximately equal**.
+
+### 6.1 Summary
+```{r}
+
+
+```
+
+### Key idea
+
+For a Poisson distribution, the mean and variance are expected to be similar.
+
+If the variance is much larger than the mean, that may be evidence of **overdispersion**.
+
+
+
+## 7. Why Not Just Use Linear Regression?
+
+Let's ask:
+
+> Do older gorillas have higher parasite loads?
+
+A simple linear model might seem like an obvious option.
+
+### 7.1 Visualize
+```{r}
+
+
+```
+
+
+
+## 8. Poisson Regression
+
+Poisson regression is a type of **generalized linear model**, or **GLM**. It is commonly used when the response variable is a count.
+A GLM extends linear regression so that we can analyze these different types of response variables. Instead of changing what we're trying to do, a GLM changes **how the model describes the response variable**.
+
+### 8.1 Generalized linear model
+```{r}
+
+
+
+```
+
+Interpretation: 
+```text
+- Estimate -> 	      Direction and size of the relationship (on the log scale)
+- p-value	 ->         Is there evidence of a relationship?
+exp(coef())	  ->      Biological interpretation (percent change in expected count)
+Residual deviance -> 	The model fits much better than the null model
+AIC	->                Used only to compare competing models (e.g., Poisson vs. Negative Binomial)
+```
+
+### 8.1 Interpreting Poisson Coefficients
+
+Poisson regression uses a log link. That means the coefficients are on the log scale. To make them easier to interpret, we exponentiate them using `exp()`.
+
+```{r}
+
+
+```
+
+> `exp()`, or `e^x` is the natural exponential function, and it's the inverse of the natural logarithm (`log()`).
+In a **linear regression**, every additional year changes the response by **adding** or **subtracting** the same amount.  
+In a **Poisson regression**, every additional year changes the response by **multiplying** by the same number. 
+
+
+## 9. Predicted Values from the Poisson Model
+
+Predicted values help us understand the model in the original units of the response variable.
+Before we can draw the prediction line from our Poisson model, we need a set of ages at which we want to make predictions.
+
+### 9.1 Wrangle
+```{r}
+
+# This code creates a new dataset called new_age that contains 
+# 100 evenly spaced ages covering the full range of our data.
+
+# Create new data for prediction
+new_age <- tibble(
+  age_years = seq(
+    from = min(data$age_years, na.rm = TRUE),
+    to = max(data$age_years, na.rm = TRUE),
+    length.out = 100
+  )
+) # seq() creates a sequence of numbers between the two ages, min/max.
+
+# Get predicted values on the response scale
+new_age$predicted_play_events <- predict(
+  mod_pois,
+  newdata = new_age,
+  type = "response"
+) 
+# Uses the fitted Poisson model (mod_pois) to make predictions.
+# Remember: we're not fitting a new model here. We're using the model we already built.
+
+# By default, Poisson regression predicts on the log scale, 
+# because that's how the model is fitted.
+# type = "response" converts those predictions back to the original scale of the data.
+
+head(new_age)
+tail(new_age)
+```
+
+### 9.2 Visualize
+```{r}
+
+
+
+```
+
+This plot is useful because it shows the model prediction in the original units of the data.
+
+
+
+## 10. Summary: Choosing a Model When Normality Fails
+
+Ask:
+
+1. What is the response variable?
+2. Is it quantitative, count, binary, or proportion?
+3. Does the response look approximately normal?
+4. Are there many zeros?
+5. Is the variance much larger than the mean?
+6. Are we comparing groups or making predictions?
+7. Which model matches the response variable?
+
+A simplified guide:
+
+| Situation | Possible analysis |
+|---|---|
+| Two groups, non-normal quantitative response | Wilcoxon test |
+| Three or more groups, non-normal quantitative response | Kruskal-Wallis test |
+| Count response, mean similar to variance | Poisson regression |
+| Count response, variance much larger than mean | Negative binomial regression |
+| Positive continuous response, right-skewed | Consider log transformation |
+| Binary response | Logistic regression, next week |
+
+# Skills Application -- Lab
+
+## 14. Lab Challenge: Non-normal and Count Data
+
+For this lab, you will work with your own dataset.
+
+Your goal is to identify whether you have a response variable that is non-normal, skewed, or count-based, and choose an appropriate analysis.
+
+### Task List
+
+1. Load your dataset and continue working in your script.
+2. Choose one response variable that is not approximately normal, or choose one count variable.
+3. Inspect the response variable using `summary()` and a plot.
+4. Decide what type of response variable it is:
+   - skewed continuous
+   - count
+   - binary
+   - proportion
+5. If you are comparing groups:
+   - consider `wilcox.test()` for two groups
+   - consider `kruskal.test()` for three or more groups
+6. If your response is a count:
+   - fit a Poisson model with `glm(..., family = "poisson")`
+   - check for overdispersion
+   - if needed, fit a negative binomial model with `MASS::glm.nb()`
+7. Write 2-3 sentences interpreting your results biologically.

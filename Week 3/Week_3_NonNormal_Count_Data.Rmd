@@ -1,0 +1,709 @@
+---
+title: "Week 3: When Normality Is Not Appropriate"
+author: "Ronnie Steinitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+  markdown:
+    wrap: 200
+---
+
+```{r global_options, include=FALSE}
+options(width = 60)
+```
+
+# Skills Learning -- Lecture
+
+Last week, we focused on comparing groups when the response variable was quantitative and reasonably close to normal.
+
+This week, we will ask:
+
+> **What do we do when normality is not a good assumption?**
+
+This happens often in ecological and biological data. Many response variables are not normally distributed.
+
+Examples include:
+
+- count data, such as aggression events or parasite load
+- skewed data, such as hormone concentrations
+- data with many zeros
+- data that cannot be negative
+
+Today we will focus on:
+
+- recognizing when a t-test, ANOVA, or linear model may not be appropriate
+- nonparametric alternatives to t-tests and ANOVA
+- count data
+- Poisson regression
+- overdispersion
+- negative binomial regression
+- when log transformations may or may not help
+
+The main question for today is:
+
+> **What kind of analysis should I use when my response variable is not normally distributed?**
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(here)
+library(MASS)
+```
+
+## 1. Load and Preview the Dataset
+
+Today we will continue using the faux gorilla hormone + behavioral dataset.
+
+```{r}
+# load dataset
+data <- readr::read_csv(here::here("Week 1/gorilla_hormone_data.csv")) %>% 
+  janitor::clean_names()
+
+# preview dataset
+glimpse(data, width = 80)
+```
+
+## 2. When Normality Is Not Appropriate
+
+Many standard tests assume that the response variable, or the model residuals, are approximately normal.
+
+This is often reasonable for continuous variables like:
+
+- body mass
+- hormone concentration
+- temperature
+- age
+
+But it is often not reasonable for variables like:
+
+- number of aggression events
+- parasite load
+- number of nests
+- number of offspring
+- number of animal sightings
+
+Count variables have special properties:
+
+- they are whole numbers
+- they cannot be negative
+- they often have many zeros
+- they are often right-skewed
+- the variance often increases as the mean increases
+
+```{r}
+# Look at continuous and count variables
+summary(data$cortisol_ng_ml)
+summary(data$aggression_events)
+summary(data$parasite_load)
+
+# Count how many observations have each aggression value
+data %>% count(aggression_events)
+
+# Count how many observations have each parasite load value
+data %>% count(parasite_load)
+```
+
+### 2.1 Compare Distributions
+
+```{r}
+# Continuous variable
+ggplot(data, aes(x = cortisol_ng_ml)) +
+  geom_histogram() +
+  labs(
+    x = "Cortisol (ng/mL)",
+    y = "Count",
+    title = "Continuous response: cortisol"
+  )
+
+# Count variable
+ggplot(data, aes(x = aggression_events)) +
+  geom_histogram(binwidth = 1) +
+  labs(
+    x = "Aggression events",
+    y = "Count",
+    title = "Count response: aggression events"
+  )
+
+# Another count variable
+ggplot(data, aes(x = parasite_load)) +
+  geom_histogram(binwidth = 5) +
+  labs(
+    x = "Parasite load",
+    y = "Count",
+    title = "Count response: parasite load"
+  )
+```
+
+### Key idea
+
+A model should match the type of response variable.
+
+```text
+Quantitative and approximately normal  ->  t-test, ANOVA, linear model
+Non-normal group comparison             ->  Wilcoxon or Kruskal-Wallis
+Count response                           ->  Poisson or negative binomial model
+Binary response                          ->  logistic regression
+Repeated measures                        ->  mixed effects model
+```
+
+This week we will focus on non-normal group comparisons and count responses.
+
+## 3. Nonparametric Alternatives
+
+Last week, we used t-tests and ANOVA to compare group means.
+
+But what if the response variable is strongly skewed, has extreme outliers, or does not look approximately normal?
+
+In those cases, we may use nonparametric tests.
+
+Nonparametric tests are useful because they do not rely as strongly on the assumption that the response variable is normally distributed.
+
+Today we will use:
+
+- `wilcox.test()` as an alternative to a two-sample t-test
+- `kruskal.test()` as an alternative to ANOVA
+
+Important note:
+
+> Nonparametric tests are not automatically better. They are used when the assumptions of the parametric test are not reasonable.
+
+## 4. Wilcoxon Test: Alternative to a Two-Sample t-test
+
+The Wilcoxon test is often used when we want to compare two independent groups, but the response variable is not approximately normal.
+
+Example question:
+
+> Do injured and uninjured gorillas differ in parasite load?
+
+Response variable:
+
+- `parasite_load`
+
+Grouping variable:
+
+- `injury_status`
+
+Number of groups:
+
+- 2
+
+```{r}
+# Make injury labels easier to read
+data <- data %>%
+  mutate(
+    injury_label = if_else(injury_status == 1, "Injured", "Not injured")
+  )
+
+# Visualize parasite load by injury status
+ggplot(data, aes(x = injury_label, y = parasite_load)) +
+  geom_boxplot(outlier.colour = "red") +
+  labs(
+    x = "Injury status",
+    y = "Parasite load",
+    title = "Parasite load by injury status"
+  )
+```
+
+```{r}
+# Summary by group
+data %>%
+  group_by(injury_label) %>%
+  summarise(
+    n = n(),
+    mean_parasites = mean(parasite_load, na.rm = TRUE),
+    median_parasites = median(parasite_load, na.rm = TRUE),
+    sd_parasites = sd(parasite_load, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+### 4.1 Run the Wilcoxon Test
+
+```{r}
+wilcox.test(parasite_load ~ injury_label, data = data)
+```
+
+### How to interpret this
+
+The Wilcoxon test asks:
+
+> Do the values in one group tend to be higher or lower than the values in the other group?
+
+This is slightly different from a t-test, which focuses on the difference between group means.
+
+For non-normal or skewed data, it is often useful to report the median as well as the mean.
+
+## 5. Kruskal-Wallis Test: Alternative to ANOVA
+
+The Kruskal-Wallis test is often used when we want to compare three or more groups, but the response variable is not approximately normal.
+
+Example question:
+
+> Does parasite load differ among age classes?
+
+Response variable:
+
+- `parasite_load`
+
+Grouping variable:
+
+- `age_class`
+
+Number of groups:
+
+- 3 or more
+
+```{r}
+# Put age classes in biological order
+data <- data %>% 
+  mutate(age_class = factor(age_class, levels = c("infant", "subadult", "adult")))
+
+# Visualize parasite load by age class
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot(outlier.colour = "red") +
+  labs(
+    x = "Age class",
+    y = "Parasite load",
+    title = "Parasite load by age class"
+  )
+```
+
+```{r}
+# Summary by age class
+data %>%
+  group_by(age_class) %>%
+  summarise(
+    n = n(),
+    mean_parasites = mean(parasite_load, na.rm = TRUE),
+    median_parasites = median(parasite_load, na.rm = TRUE),
+    sd_parasites = sd(parasite_load, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+### 5.1 Run the Kruskal-Wallis Test
+
+```{r}
+kruskal.test(parasite_load ~ age_class, data = data)
+```
+
+### How to interpret this
+
+The Kruskal-Wallis test asks:
+
+> Do parasite load values tend to differ among age classes?
+
+It is similar in purpose to ANOVA, but it is used when ANOVA assumptions are not reasonable.
+
+Like ANOVA, Kruskal-Wallis tells us whether there is evidence of a difference somewhere among the groups. It does not tell us exactly which groups differ.
+
+## 6. Count Data
+
+Now we will move from nonparametric group comparisons to models designed specifically for count data.
+
+Count data are common in ecology and wildlife research.
+
+Examples:
+
+- number of aggression events
+- number of parasites
+- number of nests
+- number of vocalizations
+- number of offspring
+- number of animal sightings
+
+Count data are different from continuous data because counts:
+
+- are whole numbers
+- cannot be negative
+- often include zeros
+- often have variance that increases with the mean
+
+```{r}
+# Inspect count variables
+summary(data$aggression_events)
+summary(data$parasite_load)
+
+# Mean and variance of aggression events
+mean(data$aggression_events)
+var(data$aggression_events)
+
+# Mean and variance of parasite load
+mean(data$parasite_load)
+var(data$parasite_load)
+```
+
+### Key idea
+
+For a Poisson distribution, the mean and variance are expected to be similar.
+
+If the variance is much larger than the mean, that may be evidence of overdispersion.
+
+## 7. Why Not Just Use Linear Regression?
+
+Let's ask:
+
+> Do older gorillas have higher parasite loads?
+
+A simple linear model might seem like an obvious option.
+
+```{r}
+# Linear model
+mod_lm <- lm(parasite_load ~ age_years, data = data)
+
+summary(mod_lm)
+```
+
+But linear regression can be inappropriate for count data because it can predict impossible values, including negative counts.
+
+```{r}
+# Predicted values from linear model
+data_lm <- data %>%
+  mutate(pred_lm = predict(mod_lm))
+
+summary(data_lm$pred_lm)
+
+# Check if any predicted values are negative
+data_lm %>%
+  filter(pred_lm < 0) %>%
+  select(sample_id, gorilla_id, age_years, parasite_load, pred_lm)
+```
+
+Even if this particular model does not predict negative values, a linear model is still not ideal for count data because it assumes normally distributed errors and constant variance.
+
+## 8. Poisson Regression
+
+Poisson regression is a type of generalized linear model, or GLM.
+
+It is commonly used when the response variable is a count.
+
+In R, we use:
+
+```text
+glm(..., family = "poisson")
+```
+
+Example question:
+
+> Does parasite load change with age?
+
+Response variable:
+
+- `parasite_load`, a count
+
+Predictor variable:
+
+- `age_years`, continuous
+
+```{r}
+# Poisson regression
+mod_pois <- glm(
+  parasite_load ~ age_years,
+  data = data,
+  family = "poisson"
+)
+
+summary(mod_pois)
+```
+
+### 8.1 Interpreting Poisson Coefficients
+
+Poisson regression uses a log link.
+
+That means the coefficients are on the log scale.
+
+To make them easier to interpret, we exponentiate them using `exp()`.
+
+```{r}
+# Coefficients on the log scale
+coef(mod_pois)
+
+# Exponentiated coefficients
+exp(coef(mod_pois))
+```
+
+The exponentiated coefficient tells us the multiplicative change in the expected count for a one-unit increase in the predictor.
+
+For example:
+
+> If `exp(coef)` for age is 1.03, then each additional year of age is associated with a 3% increase in expected parasite load.
+
+```{r}
+# Make a clean coefficient table
+poisson_results <- tibble(
+  term = names(coef(mod_pois)),
+  estimate_log_scale = coef(mod_pois),
+  estimate_count_ratio = exp(coef(mod_pois))
+)
+
+poisson_results
+```
+
+## 9. Predicted Values from the Poisson Model
+
+Predicted values help us understand the model in the original units of the response variable.
+
+```{r}
+# Create new data for prediction
+new_age <- tibble(
+  age_years = seq(
+    from = min(data$age_years, na.rm = TRUE),
+    to = max(data$age_years, na.rm = TRUE),
+    length.out = 100
+  )
+)
+
+# Get predicted values on the response scale
+new_age$predicted_parasite_load <- predict(
+  mod_pois,
+  newdata = new_age,
+  type = "response"
+)
+
+head(new_age)
+```
+
+```{r}
+# Plot observed data and predicted values
+ggplot(data, aes(x = age_years, y = parasite_load)) +
+  geom_point(alpha = 0.4) +
+  geom_line(
+    data = new_age,
+    aes(x = age_years, y = predicted_parasite_load),
+    color = "red",
+    linewidth = 1
+  ) +
+  labs(
+    x = "Age (years)",
+    y = "Parasite load",
+    title = "Poisson model: predicted parasite load by age"
+  )
+```
+
+This plot is useful because it shows the model prediction in the original units of the data.
+
+## 10. Overdispersion
+
+Poisson regression assumes that the mean and variance are similar.
+
+Ecological data often violate this assumption.
+
+When the variance is much larger than the mean, we call this **overdispersion**.
+
+Overdispersion matters because it can make p-values too small and make us too confident in the results.
+
+A simple way to check for overdispersion is:
+
+```text
+residual deviance / residual degrees of freedom
+```
+
+Values close to 1 are usually acceptable.
+
+Values much larger than 1 suggest overdispersion.
+
+```{r}
+# Check overdispersion
+dispersion_ratio <- deviance(mod_pois) / df.residual(mod_pois)
+
+dispersion_ratio
+```
+
+### How to interpret this
+
+- close to 1: little evidence of overdispersion
+- greater than 1.5 or 2: possible overdispersion
+- much larger than 2: strong evidence of overdispersion
+
+This is a rule of thumb, not a strict law.
+
+## 11. Negative Binomial Regression
+
+Negative binomial regression is useful when the response variable is a count and the data are overdispersed.
+
+A negative binomial model is like a Poisson model, but it allows extra variation.
+
+In R, we can use `glm.nb()` from the `MASS` package.
+
+```{r}
+# Negative binomial regression
+mod_nb <- MASS::glm.nb(
+  parasite_load ~ age_years,
+  data = data
+)
+
+summary(mod_nb)
+```
+
+### 11.1 Compare Poisson and Negative Binomial Models
+
+One simple way to compare models is AIC.
+
+Lower AIC values suggest better model fit, relative to the other model being compared.
+
+```{r}
+AIC(mod_pois, mod_nb)
+```
+
+If the negative binomial model has a much lower AIC, it may fit the count data better than the Poisson model.
+
+### 11.2 Predicted Values from the Negative Binomial Model
+
+```{r}
+new_age$predicted_nb <- predict(
+  mod_nb,
+  newdata = new_age,
+  type = "response"
+)
+
+head(new_age)
+```
+
+```{r}
+ggplot(data, aes(x = age_years, y = parasite_load)) +
+  geom_point(alpha = 0.4) +
+  geom_line(
+    data = new_age,
+    aes(x = age_years, y = predicted_nb),
+    color = "blue",
+    linewidth = 1
+  ) +
+  labs(
+    x = "Age (years)",
+    y = "Parasite load",
+    title = "Negative binomial model: predicted parasite load by age"
+  )
+```
+
+## 12. When Should We Log-Transform?
+
+Log transformations can help when a continuous response variable is strongly right-skewed.
+
+They are often used for positive continuous variables such as:
+
+- hormone concentrations
+- body mass
+- home range size
+- concentration values
+
+```{r}
+# Cortisol distribution
+ggplot(data, aes(x = cortisol_ng_ml)) +
+  geom_histogram() +
+  labs(
+    x = "Cortisol (ng/mL)",
+    y = "Count",
+    title = "Raw cortisol values"
+  )
+
+# Log cortisol distribution
+ggplot(data, aes(x = log(cortisol_ng_ml))) +
+  geom_histogram() +
+  labs(
+    x = "log(Cortisol)",
+    y = "Count",
+    title = "Log-transformed cortisol values"
+  )
+```
+
+### Important cautions
+
+A log transformation is not always appropriate.
+
+Be careful when:
+
+- the response variable is a count
+- the response variable includes zeros
+- the response variable is binary
+- the response variable is a proportion bounded between 0 and 1
+
+For count data, Poisson or negative binomial models are usually more appropriate than simply logging the count and using a linear model.
+
+## 13. Summary: Choosing a Model When Normality Fails
+
+Ask:
+
+1. What is the response variable?
+2. Is it quantitative, count, binary, or proportion?
+3. Does the response look approximately normal?
+4. Are there many zeros?
+5. Is the variance much larger than the mean?
+6. Are we comparing groups or making predictions?
+7. Which model matches the response variable?
+
+A simplified guide:
+
+| Situation | Possible analysis |
+|---|---|
+| Two groups, non-normal quantitative response | Wilcoxon test |
+| Three or more groups, non-normal quantitative response | Kruskal-Wallis test |
+| Count response, mean similar to variance | Poisson regression |
+| Count response, variance much larger than mean | Negative binomial regression |
+| Positive continuous response, right-skewed | Consider log transformation |
+| Binary response | Logistic regression, next week |
+
+# Skills Application -- Lab
+
+## 14. Lab Challenge: Non-normal and Count Data
+
+For this lab, you will work with your own dataset.
+
+Your goal is to identify whether you have a response variable that is non-normal, skewed, or count-based, and choose an appropriate analysis.
+
+### Task List
+
+1. Load your dataset and continue working in your script.
+2. Choose one response variable that is not approximately normal, or choose one count variable.
+3. Inspect the response variable using `summary()` and a plot.
+4. Decide what type of response variable it is:
+   - skewed continuous
+   - count
+   - binary
+   - proportion
+5. If you are comparing groups:
+   - consider `wilcox.test()` for two groups
+   - consider `kruskal.test()` for three or more groups
+6. If your response is a count:
+   - fit a Poisson model with `glm(..., family = "poisson")`
+   - check for overdispersion
+   - if needed, fit a negative binomial model with `MASS::glm.nb()`
+7. Write 2-3 sentences interpreting your results biologically.
+
+## 15. Template for Your Answer
+
+**Biological question:**  
+
+**Response variable:**  
+
+**Response variable type:**  
+
+**Why might a normal model not be appropriate?**  
+
+**Predictor or grouping variable:**  
+
+**Chosen analysis:**  
+
+**Why this analysis?**  
+
+**Biological interpretation:**  
+
+```{r}
+# Load your data here
+```
+
+```{r}
+# Inspect your response variable here
+```
+
+```{r}
+# Run your analysis here
+```
+
+```{r}
+# Interpret or visualize results here, if useful
+```
