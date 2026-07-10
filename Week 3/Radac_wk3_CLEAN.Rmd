@@ -354,7 +354,7 @@ A simplified guide:
 
 # Skills Application -- Lab
 
-## 14. Lab Challenge: Non-normal and Count Data
+## 11. Lab Challenge: Non-normal and Count Data
 
 For this lab, you will work with your own dataset.
 

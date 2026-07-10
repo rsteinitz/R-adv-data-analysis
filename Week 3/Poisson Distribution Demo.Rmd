@@ -1,0 +1,83 @@
+---
+title: "Poisson Demo"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-07-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+library(tidyverse)
+
+# Change this number
+lambda <- 1
+
+# Possible counts
+counts <- 0:40
+
+# Poisson probabilities
+pois_data <- tibble(
+  count = counts,
+  probability = dpois(counts, lambda = lambda)
+)
+
+# Plot
+ggplot(pois_data, aes(x = count, y = probability)) +
+  geom_col(fill = "turquoise3") +
+  geom_vline(xintercept = lambda,
+             linetype = "solid",
+             color = "red", size = 1) + # the mean / lambda
+  labs(
+    title = paste("Poisson Distribution (λ =", lambda, ")"),
+    x = "Number of events",
+    y = "Probability"
+  ) +
+  theme_bw()
+
+# The red line marks λ, the expected (average) number of events. As λ increases, the whole distribution shifts to the right and spreads out.
+```
+
+```{r}
+# Values of lambda to compare
+lambdas <- c(1, 2, 4, 8, 10)
+
+# Possible counts
+counts <- 0:30
+
+# Create dataset
+pois_data2 <- expand.grid(
+  count = counts,
+  lambda = lambdas
+) %>%
+  mutate(
+    probability = dpois(count, lambda)
+  )
+
+# Plot
+ggplot(pois_data2,
+       aes(x = count,
+           y = probability,
+           color = factor(lambda))) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    x = "Number of events",
+    y = "Probability",
+    color = expression(lambda)
+  ) +
+  theme_bw()
+
+ggplot(pois_data2,
+       aes(count, probability)) +
+  geom_col(aes(fill = as.factor(lambda))) +
+  facet_wrap(~lambda, nrow = 1) +
+  labs(
+    x = "Number of events",
+    y = "Probability",
+    fill = expression(lambda)
+  ) +
+  theme_bw()
+```
+
