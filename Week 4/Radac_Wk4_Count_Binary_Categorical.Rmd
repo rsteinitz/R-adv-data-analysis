@@ -1,0 +1,753 @@
+---
+title: "Week 4: Count, Binary, and Categorical Outcomes"
+author: "Ronnie Bailey-Steinitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+options(width = 60)
+```
+
+# Skills Learning -- Lecture
+
+Last week, we introduced nonparametric tests and began working with count data using a Poisson generalized linear model.
+
+This week, we will complete several major branches of our model-selection framework:
+
+- Poisson regression for count data
+- negative binomial regression for overdispersed count data
+- logistic regression for binary outcomes
+- chi-square tests for relationships between categorical variables
+- Fisher's exact test when categorical sample sizes are small
+
+The main question for today is:
+
+> **What statistical analysis should I use when my response variable is a count, binary, or categorical variable?**
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(here)
+library(MASS)
+```
+
+## 1. Load and Preview the Dataset
+
+We will continue using the faux gorilla hormone and behavioral dataset from Week 3.
+
+```{r}
+data <- readr::read_csv(
+  here::here("Week 3/gorilla_hormone_data_week3.csv")
+) %>%
+  janitor::clean_names()
+
+glimpse(data)
+```
+
+Create labels for binary variables so the output and figures are easier to read.
+
+```{r}
+data <- data %>%
+  mutate(
+    injury_label = if_else(
+      injury_status == 1,
+      "Injured",
+      "Not injured"
+    ),
+    respiratory_label = if_else(
+      respiratory_signs == 1,
+      "Respiratory signs",
+      "No respiratory signs"
+    )
+  )
+```
+
+# Part 1: Count Outcomes
+
+## 2. Create a Poisson-Like Count Variable
+
+The Week 3 dataset contains count variables, but they are strongly overdispersed. To practice a Poisson model first, we will create a new faux count variable called `feeding_bouts`.
+
+The expected number of feeding bouts will increase with fruit availability.
+
+```{r}
+set.seed(2026)
+
+data <- data %>%
+  mutate(
+    expected_feeding_bouts = exp(
+      1.1 + 1.2 * fruit_availability_index
+    ),
+    feeding_bouts = rpois(
+      n = n(),
+      lambda = expected_feeding_bouts
+    )
+  )
+
+glimpse(data)
+summary(data$feeding_bouts)
+```
+
+The `rpois()` function generates count values from a Poisson distribution.
+
+For each row:
+
+- `n()` tells R how many values to generate
+- `lambda` gives the expected count
+- the expected count changes with fruit availability
+
+### 2.1 Inspect the Count Variable
+
+```{r}
+mean(data$feeding_bouts)
+var(data$feeding_bouts)
+
+ggplot(data, aes(x = feeding_bouts)) +
+  geom_histogram(binwidth = 1) +
+  labs(
+    x = "Feeding bouts",
+    y = "Number of observations",
+    title = "Distribution of feeding bouts"
+  ) +
+  theme_bw()
+```
+
+## 3. Poisson Regression
+
+Biological question:
+
+> **Does fruit availability predict the number of feeding bouts?**
+
+Response variable:
+
+- `feeding_bouts`, a count
+
+Predictor variable:
+
+- `fruit_availability_index`, continuous
+
+```{r}
+mod_pois <- glm(
+  feeding_bouts ~ fruit_availability_index,
+  data = data,
+  family = "poisson"
+)
+
+summary(mod_pois)
+```
+
+### 3.1 Interpret the Coefficients
+
+Poisson regression coefficients are on the log scale.
+
+```{r}
+coef(mod_pois)
+```
+
+Exponentiate the coefficients to interpret them on the count scale.
+
+```{r}
+exp(coef(mod_pois))
+```
+
+For a continuous predictor:
+
+- an exponentiated coefficient greater than 1 indicates an increase
+- an exponentiated coefficient less than 1 indicates a decrease
+- an exponentiated coefficient equal to 1 indicates no change
+
+Calculate the percentage change associated with a one-unit increase in fruit availability.
+
+```{r}
+fruit_rate_ratio <- exp(
+  coef(mod_pois)["fruit_availability_index"]
+)
+
+fruit_percent_change <- (
+  fruit_rate_ratio - 1
+) * 100
+
+fruit_rate_ratio
+fruit_percent_change
+```
+
+Interpretation template:
+
+> For each one-unit increase in fruit availability, the expected number of feeding bouts is multiplied by `fruit_rate_ratio`. This is equivalent to approximately a `fruit_percent_change`% change in expected feeding bouts.
+
+## 4. Predicted Values from the Poisson Model
+
+Create a sequence covering the observed range of fruit availability.
+
+```{r}
+new_fruit <- tibble(
+  fruit_availability_index = seq(
+    from = min(
+      data$fruit_availability_index,
+      na.rm = TRUE
+    ),
+    to = max(
+      data$fruit_availability_index,
+      na.rm = TRUE
+    ),
+    length.out = 100
+  )
+)
+```
+
+Use the fitted model to predict feeding bouts across this range.
+
+```{r}
+new_fruit$predicted_feeding_bouts <- predict(
+  mod_pois,
+  newdata = new_fruit,
+  type = "response"
+)
+
+head(new_fruit)
+```
+
+Plot the observed counts and model predictions.
+
+```{r}
+ggplot(
+  data,
+  aes(
+    x = fruit_availability_index,
+    y = feeding_bouts
+  )
+) +
+  geom_point(alpha = 0.4) +
+  geom_line(
+    data = new_fruit,
+    aes(
+      x = fruit_availability_index,
+      y = predicted_feeding_bouts
+    ),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Fruit availability index",
+    y = "Feeding bouts",
+    title = "Predicted feeding bouts by fruit availability"
+  ) +
+  theme_bw()
+```
+
+## 5. Check for Overdispersion
+
+A Poisson model assumes that the amount of variation is consistent with a Poisson distribution.
+
+A quick diagnostic is:
+
+```text
+Residual deviance / residual degrees of freedom
+```
+
+```{r}
+dispersion_pois <- deviance(mod_pois) /
+  df.residual(mod_pois)
+
+dispersion_pois
+```
+
+General guide:
+
+- close to 1: little evidence of overdispersion
+- greater than 1.5 or 2: possible overdispersion
+- much larger than 2: strong overdispersion
+
+This is a diagnostic guide, not a strict cutoff.
+
+## 6. An Overdispersed Count Variable
+
+Now return to `parasite_load`, which was designed to be much more variable than a Poisson distribution expects.
+
+Biological question:
+
+> **Does parasite load change with age?**
+
+```{r}
+summary(data$parasite_load)
+
+mean(data$parasite_load)
+var(data$parasite_load)
+
+ggplot(data, aes(x = parasite_load)) +
+  geom_histogram(binwidth = 5) +
+  labs(
+    x = "Parasite load",
+    y = "Number of observations",
+    title = "Distribution of parasite load"
+  ) +
+  theme_bw()
+```
+
+### 6.1 Fit a Poisson Model First
+
+```{r}
+mod_parasite_pois <- glm(
+  parasite_load ~ age_years,
+  data = data,
+  family = "poisson"
+)
+
+summary(mod_parasite_pois)
+```
+
+Check overdispersion.
+
+```{r}
+dispersion_parasite <- deviance(
+  mod_parasite_pois
+) / df.residual(mod_parasite_pois)
+
+dispersion_parasite
+```
+
+If this value is much larger than 1, the parasite counts vary more than the Poisson model allows.
+
+## 7. Negative Binomial Regression
+
+Negative binomial regression is used for count data that are overdispersed.
+
+It follows the same formula structure as a Poisson regression but allows extra variability.
+
+```{r}
+mod_parasite_nb <- MASS::glm.nb(
+  parasite_load ~ age_years,
+  data = data
+)
+
+summary(mod_parasite_nb)
+```
+
+Exponentiate the coefficients.
+
+```{r}
+exp(coef(mod_parasite_nb))
+```
+
+Calculate the percentage change associated with one additional year of age.
+
+```{r}
+age_rate_ratio_nb <- exp(
+  coef(mod_parasite_nb)["age_years"]
+)
+
+age_percent_change_nb <- (
+  age_rate_ratio_nb - 1
+) * 100
+
+age_rate_ratio_nb
+age_percent_change_nb
+```
+
+## 8. Compare Poisson and Negative Binomial Models
+
+Use AIC to compare the two models.
+
+```{r}
+AIC(
+  mod_parasite_pois,
+  mod_parasite_nb
+)
+```
+
+Interpretation:
+
+> Lower AIC indicates better relative model fit. If the negative binomial model has a substantially lower AIC, it is a better choice for these overdispersed counts.
+
+# Part 2: Binary Outcomes
+
+## 9. What Is a Binary Outcome?
+
+A binary variable has only two possible values.
+
+Examples:
+
+- injured / not injured
+- sick / healthy
+- present / absent
+- alive / dead
+- success / failure
+
+In this dataset:
+
+```{r}
+data %>%
+  count(injury_status, injury_label)
+
+data %>%
+  count(
+    respiratory_signs,
+    respiratory_label
+  )
+```
+
+The numeric coding is:
+
+- `0` = event did not occur
+- `1` = event occurred
+
+The mean of a 0/1 variable is the proportion of observations coded 1.
+
+```{r}
+mean(data$injury_status)
+mean(data$respiratory_signs)
+```
+
+## 10. Why Not Use Linear Regression for a Binary Outcome?
+
+Let's ask:
+
+> **Does parasite load predict whether a gorilla is injured?**
+
+A linear model can produce predicted values below 0 or above 1, even though probabilities must remain between 0 and 1.
+
+```{r}
+mod_binary_lm <- lm(
+  injury_status ~ parasite_load,
+  data = data
+)
+
+summary(mod_binary_lm)
+
+summary(
+  predict(mod_binary_lm)
+)
+```
+
+Check for impossible predicted probabilities.
+
+```{r}
+data %>%
+  mutate(
+    predicted_lm = predict(mod_binary_lm)
+  ) %>%
+  filter(
+    predicted_lm < 0 |
+      predicted_lm > 1
+  ) %>%
+  select(
+    sample_id,
+    gorilla_id,
+    parasite_load,
+    injury_status,
+    predicted_lm
+  )
+```
+
+## 11. Logistic Regression
+
+Logistic regression is used when the response variable is binary.
+
+In R:
+
+```text
+glm(..., family = "binomial")
+```
+
+Biological question:
+
+> **Does parasite load predict the probability of injury?**
+
+```{r}
+mod_logistic <- glm(
+  injury_status ~ parasite_load,
+  data = data,
+  family = "binomial"
+)
+
+summary(mod_logistic)
+```
+
+### 11.1 Interpret Logistic Regression Coefficients
+
+Logistic regression coefficients are on the log-odds scale.
+
+```{r}
+coef(mod_logistic)
+```
+
+Exponentiating the coefficients gives odds ratios.
+
+```{r}
+exp(coef(mod_logistic))
+```
+
+Interpretation guide:
+
+- odds ratio greater than 1: higher predictor values are associated with higher odds of the event
+- odds ratio less than 1: higher predictor values are associated with lower odds of the event
+- odds ratio equal to 1: no change in odds
+
+Calculate the odds ratio for parasite load.
+
+```{r}
+parasite_odds_ratio <- exp(
+  coef(mod_logistic)["parasite_load"]
+)
+
+parasite_odds_ratio
+```
+
+Interpretation template:
+
+> For each one-unit increase in parasite load, the odds of injury are multiplied by `parasite_odds_ratio`.
+
+## 12. Predicted Probabilities
+
+Predicted probabilities are usually easier to understand biologically than log-odds.
+
+Create a sequence of parasite-load values.
+
+```{r}
+new_parasites <- tibble(
+  parasite_load = seq(
+    from = min(
+      data$parasite_load,
+      na.rm = TRUE
+    ),
+    to = max(
+      data$parasite_load,
+      na.rm = TRUE
+    ),
+    length.out = 100
+  )
+)
+```
+
+Predict the probability of injury.
+
+```{r}
+new_parasites$predicted_injury_probability <- predict(
+  mod_logistic,
+  newdata = new_parasites,
+  type = "response"
+)
+
+head(new_parasites)
+tail(new_parasites)
+```
+
+Plot the observed binary outcomes and predicted probabilities.
+
+```{r}
+ggplot(
+  data,
+  aes(
+    x = parasite_load,
+    y = injury_status
+  )
+) +
+  geom_jitter(
+    height = 0.03,
+    width = 0,
+    alpha = 0.35
+  ) +
+  geom_line(
+    data = new_parasites,
+    aes(
+      x = parasite_load,
+      y = predicted_injury_probability
+    ),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Parasite load",
+    y = "Predicted probability of injury",
+    title = "Probability of injury by parasite load"
+  ) +
+  theme_bw()
+```
+
+# Part 3: Categorical Variables
+
+## 13. Contingency Tables
+
+A contingency table displays the number of observations in each combination of two categorical variables.
+
+Example question:
+
+> **Is injury status associated with sex?**
+
+```{r}
+injury_sex_table <- table(
+  data$sex,
+  data$injury_label
+)
+
+injury_sex_table
+```
+
+Add row and column totals.
+
+```{r}
+addmargins(injury_sex_table)
+```
+
+View proportions by sex.
+
+```{r}
+prop.table(
+  injury_sex_table,
+  margin = 1
+)
+```
+
+## 14. Chi-Square Test of Independence
+
+A chi-square test asks whether two categorical variables are associated.
+
+The null hypothesis is:
+
+> Injury status and sex are independent.
+
+The alternative hypothesis is:
+
+> Injury status and sex are associated.
+
+```{r}
+chi_result <- chisq.test(
+  injury_sex_table
+)
+
+chi_result
+```
+
+### 14.1 Expected Counts
+
+The chi-square test compares:
+
+- observed counts: what we actually saw
+- expected counts: what we would expect if the variables were unrelated
+
+```{r}
+injury_sex_table
+
+chi_result$expected
+```
+
+Interpretation:
+
+- a small p-value suggests an association
+- a large p-value means we do not have strong evidence of an association
+
+Biological interpretation template:
+
+> Injury status was / was not significantly associated with sex (chi-square test, p = ___).
+
+## 15. Fisher's Exact Test
+
+The chi-square approximation may be unreliable when expected cell counts are very small.
+
+Check the expected counts:
+
+```{r}
+chi_result$expected
+```
+
+If one or more expected counts are below about 5, Fisher's exact test is often safer.
+
+```{r}
+fisher.test(
+  injury_sex_table
+)
+```
+
+Fisher's exact test answers the same basic question:
+
+> Are the two categorical variables associated?
+
+It calculates an exact p-value rather than relying on the chi-square approximation.
+
+# Part 4: Choosing the Analysis
+
+## 16. Summary
+
+| Response or question | Possible analysis |
+|---|---|
+| Continuous response | Linear regression |
+| Count response with acceptable Poisson fit | Poisson regression |
+| Overdispersed count response | Negative binomial regression |
+| Binary response | Logistic regression |
+| Association between two categorical variables | Chi-square test |
+| Two categorical variables with small expected counts | Fisher's exact test |
+
+Before choosing an analysis, ask:
+
+1. What is the biological question?
+2. What is the response variable?
+3. What type of variable is the response?
+4. Are we modeling an outcome or testing an association?
+5. Does the model match the structure of the response variable?
+6. Are observations independent?
+
+# Skills Application -- Lab
+
+## 17. Lab Challenge
+
+Work in your ongoing file:
+
+`Lastname_Firstname_Data.Rmd`
+
+### Task List
+
+1. Load your dataset and continue working in your script.
+2. Identify one count, binary, or categorical variable.
+3. Write a biological question using that variable.
+4. Choose an appropriate analysis:
+   - Poisson regression
+   - negative binomial regression
+   - logistic regression
+   - chi-square test
+   - Fisher's exact test
+5. Run the analysis.
+6. Check any important model condition:
+   - overdispersion for a Poisson model
+   - expected cell counts for a chi-square test
+7. Interpret the result biologically in 2-3 sentences.
+
+> **Goal:** Match the analysis to the response variable and complete the path from research question to biological insight.
+
+## 18. Student Template
+
+**Biological question:**  
+
+**Response variable:**  
+
+**Response variable type:**  
+
+**Predictor or second categorical variable:**  
+
+**Chosen analysis:**  
+
+**Why is this analysis appropriate?**  
+
+**Important diagnostic or assumption check:**  
+
+**Biological interpretation:**  
+
+```{r}
+# Load and inspect your data
+```
+
+```{r}
+# Run your chosen analysis
+```
+
+```{r}
+# Check an important model condition
+```
+
+```{r}
+# Create predicted values or a plot only if it helps interpretation
+```

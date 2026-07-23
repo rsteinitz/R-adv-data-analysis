@@ -1,0 +1,473 @@
+---
+title: "Week 4: Count, Binary, and Categorical Outcomes"
+author: "Ronnie Bailey-Steinitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+options(width = 60)
+```
+
+# Skills Learning -- Lecture
+
+Last week, we introduced nonparametric tests and began working with count data.
+
+This week, we will complete several major branches of our model-selection framework by asking:
+
+> **What analysis should I use when my response variable is a count, binary, or categorical variable?**
+
+Today we will focus on:
+
+- negative binomial regression for count outcomes
+- logistic regression for binary outcomes
+- chi-square tests for relationships between categorical variables
+- Fisher's exact test when expected counts are small
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(here)
+library(MASS)
+```
+
+## 1. Load and Preview the Dataset
+
+We will continue using the faux gorilla hormone and behavioral dataset.
+
+```{r}
+data <- readr::read_csv(
+  here::here("Week 3/gorilla_hormone_data_week3.csv")
+) %>%
+  janitor::clean_names()
+
+glimpse(data)
+```
+
+# Part 1: Count Outcomes
+
+## 2. Count Response Variables
+
+Count variables represent the number of times something happened.
+
+Examples include:
+
+- number of parasites
+- number of aggression events
+- number of nests
+- number of vocalizations
+- number of animal sightings
+
+Count variables:
+
+- are whole numbers
+- cannot be negative
+- often include many zeros
+- are often highly variable in ecological datasets
+
+Today, we will use `parasite_load` as our count response variable.
+
+```{r}
+summary(data$parasite_load)
+
+hist(data$parasite_load)
+```
+
+## 3. Negative Binomial Regression
+
+Negative binomial regression is used when:
+
+- the response variable is a count
+- the counts are highly variable
+- the response cannot be negative
+
+Biological question:
+
+> **Does parasite load change with age?**
+
+```{r}
+
+mod_pois <- glm(parasite_load ~ age_years, 
+                family = poisson,
+                data = data)
+
+deviance(mod_pois)/df.residual(mod_pois)
+
+mod_nb <- glm.nb(parasite_load ~ age_years, data = data)
+
+summary(mod_nb)
+
+AIC(mod_pois, mod_nb)
+
+exp(coef(mod_nb))
+
+ggplot(data, aes(x = age_years, y = parasite_load)) + geom_smooth() + geom_point(alpha = 0.5)
+
+```
+
+> We asked: Does parasite load change with age?
+
+Negative binomial regressions use a log link, so these coefficients are on the log scale.
+
+
+
+... now, let's exponentiate the result:
+
+### 3.1 Interpret the Coefficients
+
+Negative binomial regression uses a log link, so the coefficients are initially reported on the log scale.
+
+```{r}
+
+# Model coefficients:
+coef(mod_nb)
+# Exponentiate the coefficients to interpret them on the original count scale:
+exp(coef(mod_nb))
+```
+
+Interpretation guide:
+
+- exponentiated coefficient greater than 1: expected count increases
+- exponentiated coefficient less than 1: expected count decreases
+- exponentiated coefficient equal to 1: no change
+
+
+## 4. Predicted Values from the Negative Binomial Model
+
+Create a sequence covering the observed age range.
+
+```{r}
+
+new_age <- tibble(
+  age_years = seq(from = min(data$age_years, na.rm = TRUE),
+                 to = 150, 
+                   #max(data$age_years),
+                 length.out = 100
+                 ))
+
+```
+
+Use the fitted model to predict parasite load at each age.
+
+```{r}
+
+new_age$predicted_parasite_load <- predict(mod_nb, newdata = new_age, type = "response")
+
+
+```
+
+Plot the observed counts and model predictions.
+
+```{r}
+
+ggplot(data, aes(x = age_years, y = parasite_load)) +
+  geom_point(alpha = 0.4) +
+  # geom_smooth(method = "lm", fullrange = TRUE) +
+  geom_line(data = new_age, aes(x = age_years, y = predicted_parasite_load)) +
+  theme_bw()
+
+```
+
+# Part 2: Binary Outcomes
+
+## 5. What Is a Binary Outcome?
+
+A binary variable has only two possible values.
+
+Examples:
+
+- injured / not injured
+- sick / healthy
+- present / absent
+
+In this dataset:
+
+```{r}
+
+data |>
+  count(
+    injury_status, 
+    injury_label
+  )
+  
+
+```
+
+The coding is:
+
+- `0` = event did not occur
+- `1` = event occurred
+
+For a variable coded 0 and 1, the mean is the proportion of observations coded 1.
+
+```{r}
+
+mean(data$injury_status)
+
+```
+
+## 6. Logistic Regression
+
+When the **response variable is binary**, we use a **logistic regression**.
+
+Biological question:
+
+> **Does parasite load predict the probability of injury?**
+
+Response variable:
+
+- `injury_status`, binary
+
+Predictor variable:
+
+- `parasite_load`, count
+
+```{r}
+
+mod_log <- glm(injury_status ~ parasite_load,
+               data = data,
+               family = "binomial")
+
+summary(mod_log)
+
+```
+
+This is very similar to the negative binomial output. The biggest difference is *what* we're predicting. Instead of predicting a **count**, we're predicting the **probability** that an event occurs (injured = 1, or 100%).
+
+> Our biological question was: Does parasite load predict whether a gorilla is injured?
+
+
+### 6.1 Interpret Logistic Regression Coefficients
+
+Logistic regression coefficients are reported on the log-odds scale.
+
+```{r}
+
+coef(mod_log)
+
+```
+
+Exponentiating the coefficients gives odds ratios.
+
+```{r}
+
+exp(coef(mod_log))
+
+```
+
+Interpretation guide:
+
+- odds ratio greater than 1: higher predictor values are associated with higher odds of the event
+- odds ratio less than 1: higher predictor values are associated with lower odds of the event
+- odds ratio equal to 1: no change in odds
+
+
+## 7. Predicted Probabilities
+
+Predicted probabilities are often easier to understand biologically than odds.
+
+Create a sequence covering the observed parasite-load range.
+
+```{r}
+new_parasites <- tibble(parasite_load = seq(from = min(data$parasite_load, na.rm = TRUE),
+                                            to = max(data$parasite_load, na.rm = TRUE),
+                                            length.out = 100))
+```
+
+Predict the probability of injury.
+
+```{r}
+
+new_parasites$predicted_injury_probability <- predict(mod_log, newdata = new_parasites, type = "response")
+
+```
+
+Plot the observed binary outcomes and predicted probabilities.
+
+```{r}
+cutoff <- new_parasites |> 
+  slice_min(abs(predicted_injury_probability - 0.5))
+
+ggplot(data, aes(x = parasite_load, y = injury_status)) +
+  geom_point(alpha = 0.4) +
+  geom_line(data = new_parasites, aes(x = parasite_load, y = predicted_injury_probability)) +
+  # geom_hline(yintercept = 0.5, color = "grey40", linetype = "dashed") +
+  geom_vline(xintercept = cutoff$parasite_load, linetype = "dashed", color = "red") +
+  theme_bw() +
+  labs(x = "Parasite Load",
+       y = "Injury Status",
+       title = "Do parasites predict\ninjury status?")
+
+```
+
+
+
+# Part 3: Relationships Between Categorical Variables
+
+## 8. Contingency Tables
+
+A contingency table displays the number of observations in each combination of two categorical variables.
+
+Biological question:
+
+> **Is injury label associated with sex?**
+
+```{r}
+
+injury_sex_table <- table(
+  data$sex,
+  data$injury_label
+)
+
+injury_sex_table
+
+prop.table(injury_sex_table, margin = 1)
+
+```
+
+
+## 9. Chi-Square Test of Independence
+
+A chi-square test asks whether two categorical variables are associated. It first calculates **what the counts would look like if the variables were completely unrelated**, then those expected counts are **compared to the counts we actually observed**. If the observed counts are much farther from the expected counts than we would expect by random chance, the relationship is considered statistically significant.
+
+The null hypothesis is:
+
+> Injury status and sex are independent.
+
+The alternative hypothesis is:
+
+> Injury status and sex are associated.
+
+```{r}
+
+addmargins(injury_sex_table)
+
+```
+
+The chi-square test starts by assuming the null hypothesis: sex and injury are completely unrelated.
+
+If that's true, then females and males should have the same injury rate: overall, 20 of 240 gorillas were injured.
+
+Results:
+```{r}
+
+chi_result <- chisq.test(injury_sex_table)
+chi_result
+
+```
+
+Interpretation:
+
+- a small p-value suggests an association
+- a large p-value means we do not have strong evidence of an association
+
+
+
+## 10. Observed and Expected Counts
+
+The chi-square test compares:
+
+- **observed counts**: what we actually saw
+- **expected counts**: what we would expect if the variables were unrelated
+
+```{r}
+
+injury_sex_table
+
+chi_result$expected
+
+```
+
+
+> The chi-square test then asks: are these differences larger than we'd expect from random chance?
+
+If yes -> small p-value.  
+If no -> large p-value.  
+
+Large differences between observed and expected counts contribute more strongly to the chi-square statistic.
+
+Conceptually, it's measuring: How different are the observed counts from the expected counts?
+
+**Small differences**
+- small X^2
+- large p-value
+
+**Large differences**
+- large X^2
+- small p-value
+
+
+## 11. Fisher's Exact Test
+
+The chi-square approximation may be unreliable when expected counts are very small.
+
+Check the expected counts:
+
+```{r}
+chi_result$expected
+```
+
+If one or more expected counts are below approximately 5, Fisher's exact test is often safer.
+
+```{r}
+fisher.test(
+  injury_sex_table
+)
+```
+
+Fisher's exact test asks the same basic question:
+
+> Are these two categorical variables associated?
+
+It calculates an exact p-value rather than relying on the chi-square approximation.
+
+# Part 4: Choosing the Analysis
+
+## 12. Summary
+
+| Response variable or question | Possible analysis |
+|---|---|
+| Continuous response | Linear regression |
+| Count response | Negative binomial regression |
+| Binary response | Logistic regression |
+| Association between two categorical variables | Chi-square test |
+| Two categorical variables with small expected counts | Fisher's exact test |
+
+Before choosing an analysis, ask:
+
+1. What is the biological question?
+2. What is the response variable?
+3. What type of variable is the response?
+4. Are we modeling an outcome or testing an association?
+5. Does the model match the structure of the response variable?
+6. Are the observations independent?
+
+# Skills Application -- Lab
+
+## 13. Lab Challenge
+
+Work in your ongoing file:
+
+`Lastname_Firstname_Data.Rmd`
+
+### Task List
+
+1. Load your dataset and continue working in your script.
+2. Identify one count, binary, or categorical variable.
+3. Write a biological question using that variable.
+4. Choose an appropriate analysis:
+   - negative binomial regression
+   - logistic regression
+   - chi-square test
+   - Fisher's exact test
+5. Run the analysis.
+6. Interpret the result biologically in 2-3 sentences.
+7. Create predicted values or a plot only if it helps explain the result.
+
+> **Goal:** Match the analysis to the response variable and complete the path from research question to biological insight.

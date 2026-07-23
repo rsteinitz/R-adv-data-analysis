@@ -46,6 +46,7 @@ The main question for today is:
 library(tidyverse)
 library(janitor)
 library(here)
+# install.packages("rstatix")
 library(rstatix) # for Dunn post-hoc test
 ```
 
@@ -91,8 +92,9 @@ Count variables have special properties:
 
 ### 2.1 Look at count data
 ```{r}
+summary(data$aggression_events)
 
-
+hist(data$aggression_events)
 ```
 
 ### Key idea
@@ -134,13 +136,26 @@ The Wilcoxon test is often used when we want to compare two independent groups, 
 ### 4.1 Visualize
 ```{r}
 
+# visualize parasite load
+ggplot(data, aes(x = injury_label, y = parasite_load)) +
+  geom_boxplot()
 
+data |> 
+  group_by(injury_label) |> 
+  # dplyr::filter(sex != "F") |> 
+  summarize(
+    n = n(),
+    mean_parasites = mean(parasite_load, na.rm = TRUE),
+    sd_parasites = sd(parasite_load, na.rm = TRUE)
+  )
+  
 ```
 
 ### 4.2 Wilcoxon Test
 
 ```{r}
 
+wilcox.test(parasite_load ~ injury_label, data = data)
 
 ```
 
@@ -160,6 +175,21 @@ The Wilcoxon test doesn't compare means like a t-test does. Instead, it compares
 ### 4.3 Ranking values
 ```{r}
 
+ranked_data <- data |> 
+  mutate(parasite_rank = rank(parasite_load))
+
+ggplot(ranked_data, aes(x = parasite_rank, y = parasite_load, color = injury_label, shape = injury_label)) +
+  geom_point(aes(alpha = injury_label), size = 2) +
+  scale_alpha_manual(values = c(0.6, 0.3)) +
+  stat_ellipse(level = 0.95) +
+  scale_shape_manual(values = c(17, 20)) +
+  theme_bw() +
+  labs(x = "Rank of Parasite Load",
+       y = "Parasite load (count/mL fecal)",
+       color = "Injury Status",
+       title = "Parasite loads ranked - lowest to highest",
+       subtitle = "Colored by injury status"
+  )
 
 ```
 
@@ -174,6 +204,23 @@ The Kruskal-Wallis test is often used when we want to compare three or more grou
 ### 5.1 Look at data
 ```{r}
 
+# Question: Does parasite load differ among classes?
+hist(data$parasite_load)
+
+data <- data |> 
+  mutate(age_class = factor(age_class, levels = c("infant", "subadult", "adult")))
+
+ggplot(data, aes(x = age_class, y = parasite_load)) +
+  geom_boxplot(outlier.color = "red") +
+  theme_bw()
+
+data |> 
+  group_by(age_class) |> 
+  summarize(
+    n = n(),
+    mean_parasites = mean(parasite_load, na.rm = TRUE),
+    sd_parasites = sd(parasite_load, na.rm = TRUE)
+  )
 
 ```
 
@@ -181,6 +228,8 @@ The Kruskal-Wallis test is often used when we want to compare three or more grou
 ### 5.2 Run the Kruskal-Wallis Test
 
 ```{r}
+
+kruskal.test(parasite_load ~ age_class, data)
 
 ```
 
@@ -199,6 +248,8 @@ If the Kruskal-Wallis test is significant, we can perform Dunn's test, the non-p
 Just like Tukey adjusted the p-values after ANOVA, Dunn's test adjusts the p-values because we're making several pairwise comparisons.
 ```{r}
 
+# from the rstatix package
+dunn_test(data, parasite_load ~ age_class, p.adjust.method = "holm")
 
 ```
 
@@ -219,6 +270,10 @@ A **Poisson** distribution describes the pattern we often see when counting how 
 ### 6.1 Summary
 ```{r}
 
+summary(data$play_events)
+
+mean(data$play_events)
+var(data$play_events)
 
 ```
 
@@ -241,7 +296,14 @@ A simple linear model might seem like an obvious option.
 ### 7.1 Visualize
 ```{r}
 
+ggplot(data, aes(x = age_years, y = play_events)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  theme_bw()
 
+mod_lm <- lm(play_events ~ age_years, data = data)
+
+summary(mod_lm)
 ```
 
 
@@ -254,7 +316,9 @@ A GLM extends linear regression so that we can analyze these different types of 
 ### 8.1 Generalized linear model
 ```{r}
 
+mod_glm <- glm(play_events ~ age_years, data = data, family = "poisson")
 
+summary(mod_glm)
 
 ```
 
@@ -273,6 +337,15 @@ Poisson regression uses a log link. That means the coefficients are on the log s
 
 ```{r}
 
+coef(mod_glm)
+# > coef(mod_glm)
+# (Intercept)   age_years 
+#   3.3330633  -0.1605488 
+
+exp(coef(mod_glm))
+# > exp(coef(mod_glm))
+# (Intercept)   age_years 
+#  28.0240566   0.8516763 
 
 ```
 
@@ -303,11 +376,11 @@ new_age <- tibble(
 
 # Get predicted values on the response scale
 new_age$predicted_play_events <- predict(
-  mod_pois,
+  mod_glm,
   newdata = new_age,
   type = "response"
 ) 
-# Uses the fitted Poisson model (mod_pois) to make predictions.
+# Uses the fitted Poisson model (mod_glm) to make predictions.
 # Remember: we're not fitting a new model here. We're using the model we already built.
 
 # By default, Poisson regression predicts on the log scale, 
@@ -321,7 +394,18 @@ tail(new_age)
 ### 9.2 Visualize
 ```{r}
 
+ggplot(data, aes(x = age_years, y = play_events)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  geom_line(data = new_age, aes(x = age_years, y = predicted_play_events), color = "red", linewidth = 1) +
+  theme_bw() +
+  labs(x = "Age",
+       y = "Play events",
+       title = "GLM: predicted play by age",
+       subtitle = "red = model\nblue = smoothed raw data"
+       )
 
+AIC(mod_lm, mod_glm)
 
 ```
 

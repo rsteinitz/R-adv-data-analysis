@@ -1,0 +1,150 @@
+---
+title: "Random Intercepts and Slopes"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-07-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(patchwork)
+
+set.seed(123)
+
+# Ages measured for each person
+ages <- seq(0, 70, length.out = 20)
+
+# Number of people
+n_people <- 9
+```
+
+```{r}
+random_intercept_data <- crossing(
+  person = factor(1:n_people),
+  age = ages
+) %>%
+  group_by(person) %>%
+  mutate(
+    person_intercept = rnorm(1, mean = 0, sd = 10),
+    blood_pressure = 105 +
+      person_intercept +
+      0.45 * age
+  ) %>%
+  ungroup()
+
+p_intercepts <- ggplot(
+  random_intercept_data,
+  aes(
+    x = age,
+    y = blood_pressure,
+    group = person
+  )
+) +
+  geom_line(linewidth = 0.8, alpha = 0.75) +
+  labs(
+    title = "Random intercepts",
+    subtitle = "Different baselines, same slope",
+    x = "Age",
+    y = "Blood pressure"
+  ) +
+  xlim(0, 70) +
+  ylim(80, 180) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+p_intercepts
+```
+
+
+```{r}
+random_slope_data <- crossing(
+  person = factor(1:n_people),
+  age = ages
+) %>%
+  group_by(person) %>%
+  mutate(
+    person_slope = rnorm(1, mean = 0.45, sd = 0.25),
+    blood_pressure = 110 +
+      person_slope * age
+  ) %>%
+  ungroup()
+
+p_slopes <- ggplot(
+  random_slope_data,
+  aes(
+    x = age,
+    y = blood_pressure,
+    group = person
+  )
+) +
+  geom_line(linewidth = 0.8, alpha = 0.75) +
+  labs(
+    title = "Random slopes",
+    subtitle = "Same baseline, different slopes",
+    x = "Age",
+    y = "Blood pressure"
+  ) +
+  theme_classic() +
+  ylim(80, 180) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+p_slopes
+```
+
+
+```{r}
+random_both_data <- crossing(
+  person = factor(1:n_people),
+  age = ages
+) %>%
+  group_by(person) %>%
+  mutate(
+    person_intercept = rnorm(1, mean = 0, sd = 10),
+    person_slope = rnorm(1, mean = 0.45, sd = 0.30),
+    blood_pressure = 105 +
+      person_intercept +
+      person_slope * age
+  ) %>%
+  ungroup()
+
+p_both <- ggplot(
+  random_both_data,
+  aes(
+    x = age,
+    y = blood_pressure,
+    group = person
+  )
+) +
+  geom_line(linewidth = 0.8, alpha = 0.75) +
+  labs(
+    title = "Random intercepts and slopes",
+    subtitle = "Different baselines, different slopes",
+    x = "Age",
+    y = "Blood pressure"
+  ) +
+  ylim(80, 180) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+p_both
+```
+
+```{r}
+
+p_intercepts + p_slopes + p_both
+
+ggsave("Slopes and Intercepts.png", width = 9, height = 4.5)
+
+```
+

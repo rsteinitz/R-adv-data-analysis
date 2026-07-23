@@ -1,0 +1,421 @@
+observation_id,land_use,sign_type
+1,Protected forest,Feeding sign
+2,Agricultural edge,Tracks
+3,Village edge,Feeding sign
+4,Protected forest,Dung
+5,Village edge,Sighting
+6,Protected forest,Sighting
+7,Protected forest,Dung
+8,Agricultural edge,Tracks
+9,Protected forest,Tracks
+10,Agricultural edge,Tracks
+11,Agricultural edge,Tracks
+12,Village edge,Tracks
+13,Protected forest,Tracks
+14,Protected forest,Dung
+15,Protected forest,Feeding sign
+16,Agricultural edge,Tracks
+17,Protected forest,Sighting
+18,Protected forest,Feeding sign
+19,Protected forest,Dung
+20,Protected forest,Dung
+21,Agricultural edge,Tracks
+22,Protected forest,Feeding sign
+23,Protected forest,Tracks
+24,Protected forest,Dung
+25,Protected forest,Sighting
+26,Protected forest,Tracks
+27,Agricultural edge,Sighting
+28,Protected forest,Sighting
+29,Protected forest,Tracks
+30,Agricultural edge,Feeding sign
+31,Protected forest,Tracks
+32,Agricultural edge,Dung
+33,Protected forest,Sighting
+34,Protected forest,Feeding sign
+35,Protected forest,Feeding sign
+36,Agricultural edge,Feeding sign
+37,Protected forest,Feeding sign
+38,Protected forest,Feeding sign
+39,Agricultural edge,Tracks
+40,Protected forest,Tracks
+41,Protected forest,Feeding sign
+42,Protected forest,Dung
+43,Protected forest,Feeding sign
+44,Protected forest,Dung
+45,Protected forest,Dung
+46,Protected forest,Sighting
+47,Village edge,Sighting
+48,Protected forest,Dung
+49,Agricultural edge,Tracks
+50,Protected forest,Dung
+51,Protected forest,Dung
+52,Agricultural edge,Tracks
+53,Protected forest,Sighting
+54,Agricultural edge,Feeding sign
+55,Protected forest,Dung
+56,Protected forest,Tracks
+57,Protected forest,Feeding sign
+58,Agricultural edge,Sighting
+59,Protected forest,Feeding sign
+60,Agricultural edge,Sighting
+61,Agricultural edge,Feeding sign
+62,Protected forest,Tracks
+63,Agricultural edge,Feeding sign
+64,Protected forest,Sighting
+65,Protected forest,Tracks
+66,Protected forest,Sighting
+67,Protected forest,Tracks
+68,Agricultural edge,Tracks
+69,Protected forest,Dung
+70,Protected forest,Tracks
+71,Agricultural edge,Dung
+72,Protected forest,Dung
+73,Protected forest,Tracks
+74,Village edge,Tracks
+75,Protected forest,Dung
+76,Agricultural edge,Feeding sign
+77,Protected forest,Feeding sign
+78,Protected forest,Tracks
+79,Protected forest,Tracks
+80,Agricultural edge,Feeding sign
+81,Agricultural edge,Sighting
+82,Protected forest,Tracks
+83,Agricultural edge,Tracks
+84,Protected forest,Sighting
+85,Agricultural edge,Tracks
+86,Protected forest,Feeding sign
+87,Protected forest,Feeding sign
+88,Agricultural edge,Dung
+89,Protected forest,Feeding sign
+90,Protected forest,Tracks
+91,Agricultural edge,Feeding sign
+92,Protected forest,Feeding sign
+93,Agricultural edge,Tracks
+94,Protected forest,Tracks
+95,Protected forest,Dung
+96,Protected forest,Tracks
+97,Protected forest,Feeding sign
+98,Protected forest,Dung
+99,Agricultural edge,Tracks
+100,Agricultural edge,Tracks
+101,Agricultural edge,Dung
+102,Protected forest,Feeding sign
+103,Village edge,Tracks
+104,Agricultural edge,Feeding sign
+105,Protected forest,Tracks
+106,Protected forest,Sighting
+107,Protected forest,Tracks
+108,Protected forest,Feeding sign
+109,Agricultural edge,Tracks
+110,Protected forest,Tracks
+111,Village edge,Tracks
+112,Agricultural edge,Sighting
+113,Protected forest,Tracks
+114,Protected forest,Feeding sign
+115,Protected forest,Sighting
+116,Protected forest,Feeding sign
+117,Agricultural edge,Tracks
+118,Agricultural edge,Feeding sign
+119,Agricultural edge,Sighting
+120,Protected forest,Dung
+121,Protected forest,Sighting
+122,Protected forest,Sighting
+123,Protected forest,Feeding sign
+124,Protected forest,Dung
+125,Protected forest,Dung
+126,Agricultural edge,Sighting
+127,Protected forest,Feeding sign
+128,Protected forest,Sighting
+129,Agricultural edge,Dung
+130,Protected forest,Dung
+131,Protected forest,Tracks
+132,Agricultural edge,Feeding sign
+133,Protected forest,Dung
+134,Village edge,Feeding sign
+135,Agricultural edge,Dung
+136,Protected forest,Sighting
+137,Agricultural edge,Dung
+138,Protected forest,Dung
+139,Protected forest,Feeding sign
+140,Protected forest,Tracks
+141,Agricultural edge,Sighting
+142,Agricultural edge,Tracks
+143,Protected forest,Dung
+144,Protected forest,Dung
+145,Agricultural edge,Sighting
+146,Village edge,Tracks
+147,Agricultural edge,Tracks
+148,Agricultural edge,Tracks
+149,Protected forest,Feeding sign
+150,Agricultural edge,Dung
+151,Village edge,Tracks
+152,Protected forest,Tracks
+153,Agricultural edge,Feeding sign
+154,Protected forest,Dung
+155,Protected forest,Sighting
+156,Agricultural edge,Feeding sign
+157,Protected forest,Sighting
+158,Agricultural edge,Tracks
+159,Protected forest,Dung
+160,Agricultural edge,Tracks
+161,Protected forest,Feeding sign
+162,Protected forest,Tracks
+163,Protected forest,Feeding sign
+164,Protected forest,Dung
+165,Agricultural edge,Dung
+166,Protected forest,Dung
+167,Protected forest,Tracks
+168,Agricultural edge,Feeding sign
+169,Agricultural edge,Tracks
+170,Agricultural edge,Dung
+171,Protected forest,Sighting
+172,Agricultural edge,Dung
+173,Protected forest,Feeding sign
+174,Village edge,Sighting
+175,Agricultural edge,Feeding sign
+176,Protected forest,Tracks
+177,Protected forest,Tracks
+178,Protected forest,Feeding sign
+179,Village edge,Sighting
+180,Village edge,Sighting
+181,Protected forest,Dung
+182,Protected forest,Dung
+183,Agricultural edge,Sighting
+184,Protected forest,Dung
+185,Protected forest,Sighting
+186,Protected forest,Dung
+187,Protected forest,Sighting
+188,Protected forest,Sighting
+189,Protected forest,Dung
+190,Protected forest,Dung
+191,Agricultural edge,Dung
+192,Agricultural edge,Dung
+193,Village edge,Tracks
+194,Village edge,Sighting
+195,Village edge,Tracks
+196,Agricultural edge,Feeding sign
+197,Protected forest,Sighting
+198,Protected forest,Feeding sign
+199,Village edge,Tracks
+200,Agricultural edge,Tracks
+201,Protected forest,Dung
+202,Agricultural edge,Tracks
+203,Protected forest,Sighting
+204,Protected forest,Feeding sign
+205,Agricultural edge,Sighting
+206,Agricultural edge,Feeding sign
+207,Village edge,Feeding sign
+208,Protected forest,Dung
+209,Protected forest,Sighting
+210,Agricultural edge,Feeding sign
+211,Protected forest,Sighting
+212,Protected forest,Dung
+213,Protected forest,Feeding sign
+214,Protected forest,Sighting
+215,Protected forest,Dung
+216,Agricultural edge,Feeding sign
+217,Village edge,Tracks
+218,Agricultural edge,Tracks
+219,Village edge,Tracks
+220,Protected forest,Dung
+221,Protected forest,Dung
+222,Agricultural edge,Sighting
+223,Agricultural edge,Feeding sign
+224,Protected forest,Tracks
+225,Protected forest,Feeding sign
+226,Village edge,Tracks
+227,Agricultural edge,Tracks
+228,Protected forest,Feeding sign
+229,Protected forest,Sighting
+230,Protected forest,Feeding sign
+231,Protected forest,Tracks
+232,Agricultural edge,Feeding sign
+233,Protected forest,Feeding sign
+234,Agricultural edge,Sighting
+235,Agricultural edge,Feeding sign
+236,Agricultural edge,Dung
+237,Agricultural edge,Sighting
+238,Protected forest,Tracks
+239,Protected forest,Sighting
+240,Agricultural edge,Sighting
+241,Agricultural edge,Feeding sign
+242,Protected forest,Tracks
+243,Protected forest,Tracks
+244,Protected forest,Sighting
+245,Village edge,Dung
+246,Agricultural edge,Sighting
+247,Protected forest,Dung
+248,Village edge,Tracks
+249,Agricultural edge,Feeding sign
+250,Agricultural edge,Sighting
+251,Protected forest,Dung
+252,Protected forest,Dung
+253,Protected forest,Dung
+254,Protected forest,Feeding sign
+255,Protected forest,Sighting
+256,Agricultural edge,Tracks
+257,Protected forest,Sighting
+258,Protected forest,Tracks
+259,Village edge,Sighting
+260,Village edge,Tracks
+261,Village edge,Tracks
+262,Village edge,Sighting
+263,Agricultural edge,Feeding sign
+264,Protected forest,Dung
+265,Protected forest,Feeding sign
+266,Agricultural edge,Dung
+267,Agricultural edge,Feeding sign
+268,Protected forest,Sighting
+269,Agricultural edge,Tracks
+270,Protected forest,Tracks
+271,Agricultural edge,Dung
+272,Protected forest,Dung
+273,Protected forest,Feeding sign
+274,Village edge,Sighting
+275,Protected forest,Dung
+276,Protected forest,Dung
+277,Protected forest,Dung
+278,Agricultural edge,Sighting
+279,Protected forest,Dung
+280,Protected forest,Sighting
+281,Agricultural edge,Dung
+282,Protected forest,Feeding sign
+283,Protected forest,Dung
+284,Village edge,Dung
+285,Protected forest,Feeding sign
+286,Protected forest,Tracks
+287,Protected forest,Dung
+288,Agricultural edge,Feeding sign
+289,Protected forest,Dung
+290,Protected forest,Tracks
+291,Protected forest,Tracks
+292,Village edge,Tracks
+293,Protected forest,Feeding sign
+294,Protected forest,Tracks
+295,Agricultural edge,Feeding sign
+296,Protected forest,Dung
+297,Protected forest,Dung
+298,Agricultural edge,Tracks
+299,Agricultural edge,Dung
+300,Protected forest,Sighting
+301,Agricultural edge,Sighting
+302,Protected forest,Sighting
+303,Agricultural edge,Dung
+304,Agricultural edge,Feeding sign
+305,Agricultural edge,Feeding sign
+306,Protected forest,Feeding sign
+307,Agricultural edge,Tracks
+308,Agricultural edge,Tracks
+309,Protected forest,Tracks
+310,Protected forest,Tracks
+311,Agricultural edge,Sighting
+312,Protected forest,Dung
+313,Protected forest,Dung
+314,Protected forest,Feeding sign
+315,Agricultural edge,Dung
+316,Agricultural edge,Sighting
+317,Village edge,Dung
+318,Protected forest,Sighting
+319,Protected forest,Dung
+320,Agricultural edge,Tracks
+321,Agricultural edge,Tracks
+322,Protected forest,Feeding sign
+323,Village edge,Tracks
+324,Village edge,Tracks
+325,Agricultural edge,Feeding sign
+326,Village edge,Sighting
+327,Protected forest,Tracks
+328,Protected forest,Dung
+329,Agricultural edge,Tracks
+330,Protected forest,Dung
+331,Agricultural edge,Feeding sign
+332,Agricultural edge,Tracks
+333,Protected forest,Sighting
+334,Agricultural edge,Dung
+335,Agricultural edge,Feeding sign
+336,Protected forest,Tracks
+337,Protected forest,Feeding sign
+338,Agricultural edge,Feeding sign
+339,Agricultural edge,Sighting
+340,Protected forest,Sighting
+341,Protected forest,Sighting
+342,Protected forest,Tracks
+343,Protected forest,Dung
+344,Protected forest,Sighting
+345,Agricultural edge,Dung
+346,Protected forest,Tracks
+347,Protected forest,Feeding sign
+348,Protected forest,Sighting
+349,Protected forest,Dung
+350,Agricultural edge,Tracks
+351,Agricultural edge,Sighting
+352,Agricultural edge,Feeding sign
+353,Protected forest,Feeding sign
+354,Village edge,Tracks
+355,Protected forest,Tracks
+356,Agricultural edge,Tracks
+357,Agricultural edge,Feeding sign
+358,Agricultural edge,Tracks
+359,Agricultural edge,Tracks
+360,Protected forest,Tracks
+361,Protected forest,Feeding sign
+362,Village edge,Dung
+363,Protected forest,Sighting
+364,Protected forest,Tracks
+365,Protected forest,Tracks
+366,Village edge,Sighting
+367,Protected forest,Sighting
+368,Protected forest,Tracks
+369,Protected forest,Feeding sign
+370,Protected forest,Sighting
+371,Agricultural edge,Tracks
+372,Village edge,Tracks
+373,Protected forest,Feeding sign
+374,Protected forest,Dung
+375,Protected forest,Sighting
+376,Agricultural edge,Feeding sign
+377,Agricultural edge,Feeding sign
+378,Agricultural edge,Tracks
+379,Village edge,Sighting
+380,Protected forest,Tracks
+381,Protected forest,Dung
+382,Protected forest,Sighting
+383,Protected forest,Sighting
+384,Agricultural edge,Dung
+385,Protected forest,Dung
+386,Protected forest,Sighting
+387,Protected forest,Dung
+388,Protected forest,Sighting
+389,Village edge,Dung
+390,Protected forest,Sighting
+391,Agricultural edge,Feeding sign
+392,Protected forest,Sighting
+393,Protected forest,Sighting
+394,Village edge,Tracks
+395,Protected forest,Tracks
+396,Village edge,Sighting
+397,Protected forest,Tracks
+398,Agricultural edge,Dung
+399,Protected forest,Sighting
+400,Protected forest,Feeding sign
+401,Village edge,Feeding sign
+402,Agricultural edge,Feeding sign
+403,Village edge,Feeding sign
+404,Agricultural edge,Tracks
+405,Village edge,Tracks
+406,Agricultural edge,Sighting
+407,Agricultural edge,Tracks
+408,Protected forest,Tracks
+409,Protected forest,Feeding sign
+410,Agricultural edge,Dung
+411,Protected forest,Dung
+412,Agricultural edge,Sighting
+413,Protected forest,Dung
+414,Protected forest,Tracks
+415,Protected forest,Tracks
+416,Protected forest,Tracks
+417,Protected forest,Feeding sign
+418,Protected forest,Sighting
+419,Agricultural edge,Tracks
+420,Protected forest,Tracks

@@ -1,0 +1,761 @@
+---
+title: "Week 5: Mixed Effects Models"
+subtitle: "Repeated Measures and Hierarchical Data"
+date: "July 17, 2026"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Learning goals
+
+By the end of this code-along, you should be able to:
+
+1. Distinguish **cross-sectional** from **longitudinal** data.
+2. Explain why repeated observations may violate independence.
+3. Identify repeated and hierarchical structure in a dataset.
+4. Fit a random-intercept model using `lme4::lmer()`.
+5. Interpret fixed effects and random effects.
+6. Compare a standard linear model with a mixed-effects model.
+7. Extract fitted values and visualize model predictions.
+8. Recognize when random slopes or nested random effects may be useful.
+
+# Part 1: Why Mixed Models?
+
+### Independence
+
+Many statistical models assume that each observation is independent.
+
+> Knowing the value of one observation should not tell us anything about another observation.
+
+Repeated measurements from the **same animal** are often similar because they share genetics, age, physiology, social environment, and life history. These observations are therefore not completely independent.
+
+### Cross-sectional vs. longitudinal data
+
+#### Cross-sectional data
+
+> A cross-sectional dataset contains **one observation per individual** at one point in time.
+
+```text
+gorilla_id   age_years   cortisol
+G01          12          18.4
+G02          15          22.1
+G03          20          25.7
+```
+
+Each gorilla appears once.
+
+#### Longitudinal data
+
+> A longitudinal dataset contains **repeated observations from the same individuals** over time.
+
+```text
+gorilla_id   month   cortisol
+G01          1       18.4
+G01          2       20.2
+G01          3       19.1
+G02          1       22.1
+G02          2       24.5
+```
+
+Here, the same gorilla may appear more than once.
+
+Because measurements from the same gorilla may be more similar to one another, we need a model that accounts for this repeated structure.
+
+> Hierarchical data: repeated-measures data are often hierarchical:
+
+```text
+observation within individual within group
+```
+
+Mixed-effects models allow us to represent this structure.
+
+
+### 0. Load packages
+
+```{r}
+
+# install.packages("broom.mixed")
+
+library(tidyverse)
+library(janitor)
+library(here)
+library(dplyr)
+library(patchwork)
+library(lme4) # `lme4` fits mixed-effects models.
+# library(lmerTest) # `lmerTest` adds approximate p-values to `lmer()` output.
+library(broom.mixed) # `broom.mixed` converts model output into tidy tables.
+
+```
+
+### 1. Import Data
+```{r}
+
+data <- readr::read_csv(here::here("Week 5/gorilla_cort_data.csv")) |> 
+  janitor::clean_names()
+
+glimpse(data)
+
+# How many rows are in the dataset?
+nrow(data) # 288
+
+# How many individuals are represented?
+n_distinct(data$gorilla_id) # 36
+
+# How many observations are there per individual?
+data %>%
+  count(gorilla_id) %>%
+  print(n = 36)
+
+data %>%
+  count(gorilla_id) %>%
+  summarise(
+    min(n),
+    max(n)
+  )
+
+```
+
+
+Each gorilla has multiple observations, so this is a **longitudinal repeated-measures dataset**.
+
+### 2. Plot
+
+```{r}
+ggplot(data, aes(x = month, y = cortisol, 
+                 group = gorilla_id, color = gorilla_id)) +
+  geom_line(alpha = 0.4, show.legend = FALSE) +
+  geom_point(alpha = 0.5) +
+  facet_grid(~group) +
+  
+  labs(
+    x = "Month",
+    y = "Cortisol (pg/mL)",
+    title = "Repeated cortisol measurements",
+    color = "Gorilla ID"
+  ) +
+  
+  scale_x_continuous(breaks = seq(1:10)) +
+  
+  theme_bw() + 
+  theme(legend.text = element_text(size = 6),
+        panel.grid.minor.x = element_blank()) + 
+  guides(color = guide_legend(override.aes = list(size = 1), nrow = 4)) +
+theme(legend.position = "bottom")
+
+```
+
+Notice that each gorilla has its own general cortisol level. Some individuals tend to have consistently higher values, while others tend to have consistently lower values.
+
+> This is one reason observations from the same individual are not independent!
+
+# Part 2: A Standard Linear Model
+
+### 3. Biological question
+
+> Is cortisol associated with fruit availability?
+
+Our response variable is continuous, so a linear model may initially appear appropriate.
+
+```{r}
+mod_lm <- lm(
+  cortisol ~ fruit_availability,
+  data = data
+)
+
+summary(mod_lm)
+
+```
+
+> We asked: is cortisol associated with fruit availability?
+
+The linear regression suggests that yes, there is a significant negative relationship between fruit availability and cortisol.
+
+- **estimated slope** `fruit availability = -9.36`, meaning that, on average, cortisol decreases by about 9.36 units for every one-unit increase in the fruit availability index.  
+- **p-value** `< 0.001 (2.02 × 10^-6)`. We therefore reject the null hypothesis that fruit availability has no association with cortisol.
+- **R²** `= 0.091`, meaning that fruit availability **explains approximately 9% of the variation in cortisol** levels. This suggests that although fruit availability is an important predictor, much of the variation in cortisol is likely explained by other factors.
+
+This model **assumes that all 240 observations are independent.** It does not know that measurements from the same gorilla belong together. In reality, many observations come from the same gorillas, meaning the independence assumption is violated. A mixed-effects model allows us to account for these repeated measurements by including gorilla ID as a random effect.
+
+
+### 4. Add individual ID as a random effect
+
+A random-intercept model allows each gorilla to have its own baseline cortisol level.
+
+```{r}
+mod_random <- lme4::lmer(
+  cortisol ~ fruit_availability + (1 | gorilla_id),
+  data = data
+)
+
+summary(mod_random)
+```
+
+> We asked: is cortisol associated with fruit availability after accounting for repeated measurements from the same gorillas?
+
+The formula contains two parts:
+
+```text
+cortisol ~ fruit_availability + (1 | gorilla_id)
+```
+
+- `fruit_availability` is a **fixed effect**
+- `(1 | gorilla_id)` is a **random intercept**
+
+The random intercept tells the model:
+
+> Allow each gorilla to have its own baseline cortisol level.
+
+The mixed-effects model indicates that **yes**, there is a significant *negative* relationship between fruit availability and cortisol.
+
+- **Estimated slope** for fruit availability `= -9.18`, meaning that, after accounting for repeated measurements from the same individuals, cortisol decreases by approximately 9.18 units for every one-unit increase in the fruit availability index.  
+
+> **A t-value** is a test statistic that measures how many standard errors a fixed-effect coefficient estimate is away from zero
+
+-- A t-value near zero means there is no clear evidence of an effect.  
+-- Absolute values greater than roughly 2 generally point to statistical significance, meaning the effect is unlikely due to random chance.  
+
+- **Estimated t-value** `= -6.92`, indicating strong evidence that fruit availability is associated with cortisol. (If using lmerTest, a p-value would also be reported.)  
+
+  
+- **Random effect:** the model estimates that gorillas differ in their baseline cortisol levels.
+
+- **Estimated SD** of the **random intercept** `= 4.01`, meaning that **individuals** vary substantially in their average cortisol concentrations, even after accounting for fruit availability.
+
+- **Residual SD** `= 3.64`, representing the remaining variation among repeated observations after accounting for both fruit availability and individual differences.
+
+Notice that the estimated effect of fruit availability hardly changed. The biological conclusion is the same: **cortisol decreases as fruit availability increases**. What changed is that the mixed model correctly accounts for the repeated measurements by allowing each gorilla to have its own baseline cortisol level.
+
+
+#### Fixed effects
+
+> The fixed effect estimates the average relationship across all gorillas.
+
+The coefficient for `fruit_availability` represents the expected change in cortisol associated with a one-unit increase in fruit availability for everyone.
+
+#### Random effects
+
+> The random-effects section describes variation among gorillas.
+
+It estimates how much individual baseline cortisol levels differ from one another.
+
+> The residual variance describes variation among observations that remains after accounting for the fixed effect and individual differences. The leftover.
+
+
+# Part 3: Compare Mixed and Non-Mixed Models
+
+### 5. Compare coefficients
+
+```{r}
+
+summary(mod_lm)$coefficients
+
+summary(mod_random)$coefficients
+
+```
+`mod_lm`
+
+| Term               |  Estimate | Standard Error |
+| ------------------ | --------: | -------------: |
+| Intercept          |     26.12 |           1.11 |
+| Fruit availability | **-9.36** |       **1.92** |
+
+`mod_random`
+
+| Term               |  Estimate | Standard Error |
+| ------------------ | --------: | -------------: |
+| Intercept          |     25.88 |           1.02 |
+| Fruit availability | **-9.18** |       **1.33** |
+
+Notice that the estimated effect of fruit availability changed very little: -9.36 -> -9.18
+
+> Both models tell the same biological story: Higher fruit availability is associated with lower cortisol levels.
+
+The main difference is not the estimated effect.  
+The main difference is how the model treats the data.  
+
+The **linear model assumes** that all 240 observations are independent, even though many observations come from the same gorillas. The **mixed-effects** model recognizes that repeated measurements from the same gorilla are related by including gorilla ID as a random effect. Because the mixed model better represents the structure of the data, it generally provides more appropriate estimates of uncertainty.
+
+> Q: "Why did the standard error get smaller? 1.92 -> 1.33"
+> A: That can happen because the random intercept explains a large amount of the between-gorilla variation. 
+
+Once the model accounts for the fact that some gorillas simply have consistently higher or lower cortisol than others, there's less unexplained "noise," so the estimate of the fruit availability effect becomes more precise.
+
+
+### 6. Compare AIC
+
+```{r}
+AIC(mod_lm, mod_random)
+```
+
+A lower AIC indicates a better balance between model fit and complexity.
+
+However, our strongest reason for using the mixed model is not simply that it has a lower AIC.
+
+> The mixed model matches the repeated structure of the data.
+
+Estimated parameters:
+
+- mod_lm:
+-- Intercept
+-- Slope for fruit availability
+-- Residual variance
+
+total: 3 dfs
+
+- mod_random_intercept
+-- Intercept
+-- Slope
+-- Random-intercept variance
+-- Residual variance
+
+total: 4 dfs
+
+The model does not estimate 36 separate intercepts (one for each gorilla).
+
+Instead, it estimates one variance parameter describing how much gorillas differ from one another.
+
+That's why the model only gains one additional parameter, not 36.
+
+The model estimates: *"How much do gorillas vary?"* rather than *"What is the exact intercept for each gorilla?"*
+
+AIC balances two things:
+
+- goodness of fit 
+- model complexity
+
+The mixed model adds one extra parameter, so it gets a small complexity penalty. But it fits the data much better because it **accounts for repeated measurements**. The improvement in fit is much larger than the penalty for the extra parameter.
+
+**AIC** rewards models that fit the data well but penalizes models that become unnecessarily complicated. The mixed model has one extra parameter because it estimates how much gorillas differ from one another. Even after paying that penalty, it fits the data much better, giving it a much lower AIC.
+
+
+# Part 4: Visualize Fitted Values
+
+### 7. Add fitted values
+
+By default, `fitted()` includes both the population-level fixed effect and each gorilla's estimated random intercept.
+
+```{r}
+data <- data %>%
+  mutate(
+    fitted_mixed = fitted(mod_random),
+    fitted_lm = fitted(mod_lm)
+  )
+```
+
+### 8. Plot individual fitted lines
+
+```{r}
+lm <- ggplot(data, aes(x = fruit_availability, y = cortisol,
+    group = gorilla_id, color = gorilla_id)) +
+  geom_point(alpha = 0.35) +
+  geom_line(aes(y = fitted_mixed), alpha = 0.5) +
+  labs(
+    x = "Fruit availability",
+    y = "Cortisol",
+    title = "Mixed-model fitted values",
+    subtitle = "Each line includes the individual random intercept"
+  ) +
+  theme_bw()
+
+random <- ggplot(data, aes(x = fruit_availability, y = cortisol,
+    group = gorilla_id, color = gorilla_id)) +
+  geom_point(alpha = 0.35, show.legend = F) +
+  geom_smooth(method = "lm", linewidth = 0.5, alpha = 0.5, se = F, show.legend = F) +
+  labs(
+    x = "Fruit availability",
+    y = "Cortisol"
+  ) +
+  theme_bw()
+
+(lm | random) + plot_layout(guides = "collect", axis_titles = "collect")
+
+```
+
+The lines have the same slope because this is a **random-intercept** model. Their intercepts differ because each gorilla is allowed to have its own baseline.
+
+When you run `geom_smooth(method = "lm", se = FALSE)` with `group = gorilla_id`, ggplot fits 36 completely separate linear regressions.
+
+It's essentially doing this:
+
+`lm(cortisol ~ fruit_availability, data = gorilla_G01)`  
+`lm(cortisol ~ fruit_availability, data = gorilla_G02)`  
+...  
+`lm(cortisol ~ fruit_availability, data = gorilla_G36)`  
+
+Each gorilla gets its own intercept and its own slope. Those slopes are estimated independently from only that gorilla's data.
+
+
+What the mixed model is doing: there is only **one fixed effect**. `fruit_availability`.That means there is only one estimated slope for fruit availability. The **random effect** is `(1 | gorilla_id)`. The `1` means "Give every gorilla its own intercept."
+
+
+In a random-intercept model, the model estimates **only one slope for the entire population**. 
+
+> It assumes that fruit availability has the same effect on cortisol for every gorilla.
+
+However, it also recognizes that **some gorillas naturally have higher cortisol levels than others**. By including gorilla ID as a random effect, the model allows each gorilla to have its own baseline cortisol level (its own intercept).
+
+As a result, each gorilla has a different regression line, but all of those lines are parallel **because they all share the same population slope** -- they *should* have the same relationship between fruit availability and cortisol.
+
+
+
+### 9. Population-level prediction
+
+We can also visualize the average fixed effect while excluding individual random effects.
+
+```{r}
+
+# create table with a series of point to predict population trend
+prediction_data <- tibble(
+  fruit_availability = seq(
+    min(data$fruit_availability),
+    max(data$fruit_availability),
+    length.out = 100
+  )
+)
+
+# use the model to predict the Y for every X in this dataset
+prediction_data <- prediction_data %>%
+  mutate(
+    predicted_cortisol = predict(
+      mod_random,
+      newdata = prediction_data,
+      re.form = NA
+    )
+  )
+
+```
+
+`re.form = NA` means: use only the fixed effects and *exclude* individual-specific random effects.
+
+#### Plot population
+```{r}
+ggplot(data, aes(x = fruit_availability, y = cortisol)) +
+  geom_point(aes(color = gorilla_id), alpha = 0.25) +
+  geom_line(data = prediction_data, aes(x = fruit_availability, y = predicted_cortisol)) +
+  labs(
+    x = "Fruit availability",
+    y = "Cortisol",
+    title = "Population-level relationship",
+    subtitle = "Prediction based on the fixed effect only"
+  ) +
+  theme_bw()
+```
+
+
+# Part 5: More Than One Fixed Effect
+
+## 10. Add respiratory signs
+
+```{r}
+mod_health <- lmer(cortisol ~ fruit_availability + respiratory_signs + (1 | gorilla_id), data = data)
+
+summary(mod_health)
+
+```
+
+This model asks:
+
+> After accounting for repeated measurements from the same gorillas, are cortisol levels associated with fruit availability and respiratory illness?
+
+Notice there are now two fixed effects.
+
+- Fruit availability (continuous)
+- Respiratory signs (yes/no)
+
+Random effects:
+`gorilla_id  (Intercept)   4.024`
+`Residual                 2.830`
+ 
+> This tells us: Gorillas still differ in their baseline cortisol levels.
+
+Even after accounting for fruit availability and respiratory illness, **individuals vary by about 4 cortisol units**.
+The remaining **unexplained variation** within individuals is about 2.8 units. 
+
+
+Compared to the previous model:
+
+| Model                     | Residual SD |
+| ------------------------- | ----------: |
+| Fruit only                |        3.64 |
+| Fruit + respiratory signs |    **2.83** |
+
+--> The residual variation became much smaller because **respiratory illness explains additional variation in cortisol**.
+
+Interpret the fixed effects:
+
+- `fruit_availability = -7.17` estimates the average association between fruit availability and cortisol while holding respiratory status constant. 
+
+> Holding respiratory status constant, cortisol decreases by approximately 7.2 units for every one-unit increase in fruit availability.
+
+- `respiratory_signs = 6.71` estimates the average difference between observations with and without respiratory signs while holding fruit availability constant.
+
+> Holding fruit availability constant, gorillas showing respiratory signs have cortisol levels that are approximately 6.7 units higher than healthy gorillas.
+
+- `(Intercept) 23.88` --> the predicted cortisol level when
+
+- fruit availability = 0
+- respiratory_signs = 0
+
+> In other words, the expected cortisol for a healthy gorilla when fruit availability is zero. Like always, **the intercept usually isn't biologically interesting.**
+
+The random intercept continues to account for repeated measurements from the same gorilla.
+
+
+Compare to previous model:
+Previous model: `Fruit coefficient = -9.18`
+We asked: *Does fruit availability predict cortisol?*
+
+New model: `Fruit coefficient = -7.17`
+We ask: Does fruit availability predict cortisol after accounting for respiratory illness?  
+*and*  
+Does respiratory illness predict cortisol after accounting for fruit availability?
+
+
+*Why did the coefficient of Fruit become smaller?*
+
+**Because respiratory illness also affects cortisol.** Some of the variation that we previously attributed to fruit availability is now explained by illness.
+
+This is exactly why we include multiple predictors.
+
+
+**To summarize, After accounting for repeated measurements from the same gorillas:**
+
+- Higher fruit availability is associated with lower cortisol.
+- Gorillas with respiratory illness have higher cortisol.
+- Both predictors independently explain variation in cortisol.
+
+#### Plot Fixed Effects
+```{r}
+
+# Create a grid of predictor values
+prediction_data <- expand.grid(
+  fruit_availability = seq(
+    min(data$fruit_availability),
+    max(data$fruit_availability),
+    length.out = 100
+  ),
+  respiratory_signs = c(0, 1)
+)
+
+# Population-level predictions
+prediction_data$predicted_cortisol <- predict(
+  mod_health,
+  newdata = prediction_data,
+  re.form = NA
+)
+
+# Make respiratory status a factor for nicer legend labels
+data$respiratory_signs <- factor(
+  data$respiratory_signs,
+  levels = c(0, 1),
+  labels = c("Healthy", "Respiratory signs")
+)
+
+prediction_data$respiratory_signs <- factor(
+  prediction_data$respiratory_signs,
+  levels = c(0, 1),
+  labels = c("Healthy", "Respiratory signs")
+)
+
+# Plot
+ggplot(
+  data,
+  aes(
+    x = fruit_availability,
+    y = cortisol
+  )
+) +
+
+  geom_point(
+    aes(color = respiratory_signs),
+    alpha = 0.25,
+    size = 1.8
+  ) +
+
+  geom_line(
+    data = prediction_data,
+    aes(
+      x = fruit_availability,
+      y = predicted_cortisol,
+      color = respiratory_signs
+    ),
+    linewidth = 1.2
+  ) +
+  
+  # geom_smooth(method = "lm", aes(color = respiratory_signs)) +
+  
+  # note how geom_smooth here produces different slopes
+  # because it doesn't account for variation caused by both 
+  # fixed effects in the model. The predicted lines do!
+  
+  labs(
+    x = "Fruit availability",
+    y = "Cortisol",
+    color = "Respiratory status"
+  ) +
+  scale_color_manual(values = c("lightblue3", "firebrick")) +
+
+  theme_classic()
+
+```
+
+
+
+# Part 6: Nested Data
+
+## 11. Individuals within groups
+
+Our data have another level of structure:
+
+```text
+observations within gorillas within social groups
+```
+
+We can allow both social groups and individual gorillas within those groups to have different baseline cortisol levels.
+
+```{r}
+mod_nested <- lmer(
+  cortisol ~ fruit_availability + respiratory_signs +
+    (1 | group/gorilla_id),
+  data = data
+)
+
+# internally, R expands this to:
+# (1 | group) + (1 | group:gorilla_id)
+#
+# This allows baseline cortisol to vary:
+# - between groups
+# - between gorillas within those groups
+
+summary(mod_nested)
+
+# # An example of two random effects that are not nested: 
+# lmer(cortisol ~ fruit_availability + respiratory_signs +
+#     (1 | group) +
+#     (1 | observer),
+#   data = data
+# )
+
+broom.mixed::tidy(
+  mod_nested,
+  effects = "fixed",
+  conf.int = TRUE
+)
+
+```
+
+Here:
+
+`(1 | group)` **allows groups to differ** in baseline cortisol.
+`(1 | group:gorilla_id)` allows **gorillas within each group to differ** in baseline cortisol.
+
+> Because every gorilla belongs to only one group, gorillas are naturally nested within groups.
+
+... *gorillas* may move between groups, but *groups* themselves also differ.
+
+
+**To summarize:**
+In our simulated dataset, each gorilla belongs to only one group, so a nested random effect is appropriate.
+
+In real mountain gorilla populations, individuals sometimes transfer between groups. If your dataset includes samples collected before and after those transfers (i.e., one gorilla belongs to more than one group), a crossed random-effects structure is usually more appropriate:
+
+`(1 | gorilla_id) + (1 | group)`
+
+This allows:
+
+- **gorillas** to have different baseline cortisol levels,
+- **groups** to have different baseline cortisol levels,
+- and **gorillas to move between groups** over time.
+
+
+# Part 7: Conceptual Introduction to Random Slopes
+
+## 12. Random intercepts vs. random slopes
+
+A random-intercept model assumes:
+
+> Individuals may start at different baseline levels, but the predictor has the same slope for everyone.
+
+A random-slope model allows:
+
+> The relationship between the predictor and response may differ among individuals.
+
+```{r}
+mod_random_slope <- lmer(
+  cortisol ~ fruit_availability +
+    (1 + fruit_availability | gorilla_id),
+  data = data
+)
+
+summary(mod_random_slope) 
+
+```
+
+The term
+
+```text
+(1 + fruit_availability | gorilla_id)
+```
+
+allows each gorilla to have its own intercept and its own slope for fruit availability.
+
+Random-slope models need enough repeated observations per individual. They are more complex and can sometimes produce convergence or singular-fit warnings.
+
+For this course, the important idea is:
+
+> Use a random slope when there is a biological reason to expect the predictor's effect to vary among individuals.
+
+
+
+# Part 8: Choosing the Random-Effects Structure
+
+## Practical decision process
+
+Before fitting a mixed model, ask:
+
+1. Are there repeated measurements from the same individual?
+2. Are observations clustered within groups, sites, plots, or years?
+3. Which grouping variables create non-independence?
+4. Does each grouping level contain enough observations?
+5. Is there a biological reason to allow slopes to vary?
+
+| Data structure | Possible random effect |
+|---|---|
+| Repeated samples from individuals | `(1 \| individual_id)` |
+| Repeated measurements from plots | `(1 \| plot_id)` |
+| Individuals within social groups | `(1 \| group) + (1 \| individual_id)` |
+| Repeated observations across years | `(1 \| year)` |
+| Predictor effect varies among individuals | `(1 + predictor \| individual_id)` |
+
+
+# Final Summary
+
+## Key ideas
+
+| Concept | Meaning |
+|---|---|
+| Independence | Observations do not provide repeated information about the same unit |
+| Cross-sectional data | One observation per individual or sampling unit |
+| Longitudinal data | Repeated observations from the same unit over time |
+| Fixed effect | Average relationship of interest across the population |
+| Random intercept | Allows groups or individuals to have different baselines |
+| Random slope | Allows a predictor's effect to differ among groups or individuals |
+| Nested data | Lower-level units occur within higher-level groups |
+| Mixed-effects model | Combines fixed effects with random effects |
+
+
+# Main takeaway
+
+A mixed-effects model is appropriate when the data contain repeated or clustered observations.
+
+The random effects do not replace the biological predictors. Instead, they allow the model to account for the structure that makes observations non-independent.

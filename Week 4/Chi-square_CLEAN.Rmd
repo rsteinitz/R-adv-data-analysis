@@ -1,0 +1,124 @@
+---
+title: "Chi-square example"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-07-17"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+1. Land use and wildlife signs
+
+Dataset 1: Wildlife signs
+
+**Question:** *Is the type of wildlife sign associated with land use?*
+
+**Null hypothesis:** *If land use is not associated with the type of wildlife sign, we'd expect to see about the same proportions of sightings, dung, tracks, and feeding signs in each land-use type.*
+
+or... if land use *doesn't* matter, then protected forests, agricultural edges, and village edges should all show a *similar* mix of wildlife signs.
+```{r}
+wildlife_signs <- readr::read_csv(
+  here::here("Week 4/land_use_wildlife_signs.csv")
+) %>%
+  janitor::clean_names()
+
+wildlife_sign_table <- table(
+  wildlife_signs$land_use,
+  wildlife_signs$sign_type
+)
+
+addmargins(wildlife_sign_table)
+
+wildlife_sign_chi <- chisq.test(wildlife_sign_table)
+
+wildlife_sign_chi
+wildlife_sign_chi$expected # expected counts!
+```
+
+The chi-square statistic summarizes the total difference between the observed and expected counts across all cells in the table. The larger the X^2 value, the greater the evidence that the two categorical variables are associated.
+
+**If the observed counts were very close to the expected counts, X^2 would be close to 0.**
+
+Our example's value of X^2 = 22.15 tells us that, overall, **the observed counts differ quite a bit** from what we'd expect if land use and wildlife sign were unrelated.
+
+The p-value (0.0011) tells us that differences this large would be very unlikely to occur by chance alone if there were truly no association.
+
+| Land use          | Sign         | Observed | Expected | Interpretation                     |
+| ----------------- | ------------ | -------: | -------: | ---------------------------------- |
+| Protected forest  | Dung         |   **70** | **57.1** | Much more dung than expected       |
+| Protected forest  | Tracks       |   **60** | **72.6** | Fewer tracks than expected         |
+| Village edge      | Dung         |    **5** | **10.7** | Much less dung than expected       |
+| Village edge      | Feeding sign |    **5** | **10.7** | Much less feeding than expected    |
+| Village edge      | Tracks       |   **22** | **13.6** | More tracks than expected          |
+| Agricultural edge | Tracks       |   **45** | **40.8** | Slightly more tracks than expected |
+
+Meaning: 
+
+- Protected forest: Animals spend more time there, so there's more dung than expected and relatively fewer tracks, suggesting they're not just passing through.
+- Village edge: There are more tracks than expected but less dung and fewer feeding signs, suggesting animals tend to move through village edges rather than spend much time there.
+- Agricultural edge: Tracks are close to (or slightly above) expectation, consistent with animals traveling through these areas to access crops or other resources.
+
+
+2. Habitat and animal activity
+
+Dataset 2: Animal activity
+
+**Question:** *Is animal activity associated with habitat type?*
+
+**Null hypothesis:** *If habitat type is not associated with animal activity, we'd expect to see about the same proportions of feeding, moving, resting, and socializing in each habitat.*
+
+or... if habitat *doesn't* influence behavior, forests, grasslands, and wetlands should all have a *similar* mix of activities.
+```{r}
+animal_activity <- readr::read_csv(
+  here::here("Week 4/habitat_animal_activity.csv")
+) %>%
+  janitor::clean_names()
+
+# continue on your own!
+```
+
+**Your Turn!**
+
+Use the `animal_activity` dataset to investigate whether habitat type is associated with animal activity.
+
+**1. Create a contingency table**
+Create a table showing the number of observations for each combination of habitat and activity.
+Add row and column totals.
+
+> Question: 
+
+- Which habitat has the most observations? Which activity is most common overall?
+
+
+**2. Run a chi-square test**
+
+Run a chi-square test using your contingency table.
+
+> Questions:
+
+- What is the chi-square statistic (X^2)?
+- What is the p-value?
+- Based on the p-value, what do you conclude?
+
+
+**3. Examine the expected counts**
+
+Display the expected counts.
+
+> Questions:
+
+- If habitat type had no effect on animal activity, what pattern would you expect to see?
+- Are the observed counts similar to the expected counts, or are some cells noticeably different?
+
+
+**4. Compare observed and expected counts**
+
+- Identify at least three combinations of habitat and activity that differ noticeably from the expected counts.
+

@@ -270,7 +270,7 @@ Number of groups:
 
 ### 5.1 Look at data
 ```{r}
-
+# > Does parasite load differ among age classes?
 hist(data$parasite_load)
 
 # Put age classes in biological order

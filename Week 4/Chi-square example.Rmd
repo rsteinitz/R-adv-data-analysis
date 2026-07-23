@@ -1,0 +1,111 @@
+---
+title: "Chi-square example"
+author: "Ronnie Bailey-Steinitz"
+date: "2026-07-17"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## 0. Load Required Packages
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+1. Land use and wildlife signs
+
+Dataset 1: Wildlife signs
+
+**Question:** *Is the type of wildlife sign associated with land use?*
+
+**Null hypothesis:** *If land use is not associated with the type of wildlife sign, we'd expect to see about the same proportions of sightings, dung, tracks, and feeding signs in each land-use type.*
+
+or... if land use *doesn't* matter, then protected forests, agricultural edges, and village edges should all show a *similar* mix of wildlife signs.
+```{r}
+wildlife_signs <- readr::read_csv(
+  here::here("Week 4/land_use_wildlife_signs.csv")
+) %>%
+  janitor::clean_names()
+
+wildlife_sign_table <- table(
+  wildlife_signs$land_use,
+  wildlife_signs$sign_type
+)
+
+addmargins(wildlife_sign_table)
+
+wildlife_sign_chi <- chisq.test(wildlife_sign_table)
+
+wildlife_sign_chi
+wildlife_sign_chi$expected # expected counts!
+```
+
+The chi-square statistic summarizes the total difference between the observed and expected counts across all cells in the table. The larger the X^2 value, the greater the evidence that the two categorical variables are associated.
+
+**If the observed counts were very close to the expected counts, X^2 would be close to 0.**
+
+Our example's value of X^2 = 22.15 tells us that, overall, **the observed counts differ quite a bit** from what we'd expect if land use and wildlife sign were unrelated.
+
+The p-value (0.0011) tells us that differences this large would be very unlikely to occur by chance alone if there were truly no association.
+
+| Land use          | Sign         | Observed | Expected | Interpretation                     |
+| ----------------- | ------------ | -------: | -------: | ---------------------------------- |
+| Protected forest  | Dung         |   **70** | **57.1** | Much more dung than expected       |
+| Protected forest  | Tracks       |   **60** | **72.6** | Fewer tracks than expected         |
+| Village edge      | Dung         |    **5** | **10.7** | Much less dung than expected       |
+| Village edge      | Feeding sign |    **5** | **10.7** | Much less feeding than expected    |
+| Village edge      | Tracks       |   **22** | **13.6** | More tracks than expected          |
+| Agricultural edge | Tracks       |   **45** | **40.8** | Slightly more tracks than expected |
+
+Meaning: 
+
+- Protected forest: Animals spend more time there, so there's more dung than expected and relatively fewer tracks, suggesting they're not just passing through.
+- Village edge: There are more tracks than expected but less dung and fewer feeding signs, suggesting animals tend to move through village edges rather than spend much time there.
+- Agricultural edge: Tracks are close to (or slightly above) expectation, consistent with animals traveling through these areas to access crops or other resources.
+
+
+2. Habitat and animal activity
+
+Dataset 2: Animal activity
+
+**Question:** *Is animal activity associated with habitat type?*
+
+**Null hypothesis:** *If habitat type is not associated with animal activity, we'd expect to see about the same proportions of feeding, moving, resting, and socializing in each habitat.*
+
+or... if habitat *doesn't* influence behavior, forests, grasslands, and wetlands should all have a *similar* mix of activities.
+```{r}
+animal_activity <- readr::read_csv(
+  here::here("Week 4/habitat_animal_activity.csv")
+) %>%
+  janitor::clean_names()
+
+activity_table <- table(
+  animal_activity$habitat,
+  animal_activity$activity
+)
+
+addmargins(activity_table)
+
+activity_chi <- chisq.test(activity_table)
+
+activity_chi
+activity_chi$expected
+```
+
+| Habitat   | Activity | Observed | Expected | Interpretation                     |
+| --------- | -------- | -------: | -------: | ---------------------------------- |
+| Forest    | Resting  |   **60** | **38.6** | Much more resting than expected    |
+| Forest    | Moving   |   **30** | **55.7** | Much less moving than expected     |
+| Grassland | Moving   |   **75** | **40.2** | Much more moving than expected     |
+| Grassland | Resting  |    **8** | **27.9** | Much less resting than expected    |
+| Wetland   | Feeding  |   **50** | **36.7** | More feeding than expected         |
+| Wetland   | Moving   |   **25** | **34.0** | Slightly less moving than expected |
+
+Meaning:
+
+- Forest: Animals rest more than expected and move less than expected, consistent with forests providing cover and safety.
+- Grassland: Animals move through open habitats much more than expected and rarely rest there.
+- Wetland: Feeding occurs more often than expected, suggesting wetlands are important for foraging.
+
